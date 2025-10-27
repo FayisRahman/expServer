@@ -14,6 +14,8 @@ struct xps_loop_s {
 struct loop_event_s {
   u_int fd;
   xps_handler_t read_cb;
+  xps_handler_t write_cb;
+  xps_handler_t close_cb;
   void *ptr;
 };
 
@@ -21,7 +23,8 @@ typedef struct loop_event_s loop_event_t;
 
 xps_loop_t *xps_loop_create(xps_core_t *core);
 void xps_loop_destroy(xps_loop_t *loop);
-int xps_loop_attach(xps_loop_t *loop, u_int fd, int event_flags, void *ptr, xps_handler_t read_cb);
+
+int xps_loop_attach(xps_loop_t *loop, u_int fd, int event_flags, void *ptr, xps_handler_t read_cb, xps_handler_t write_cb, xps_handler_t close_cb); 
 int xps_loop_detach(xps_loop_t *loop, u_int fd);
 void xps_loop_run(xps_loop_t *loop);
 

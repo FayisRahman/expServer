@@ -9,6 +9,8 @@ int make_socket_non_blocking(u_int sock_fd);
 struct addrinfo *xps_getaddrinfo(const char *host, u_int port);
 char *get_remote_ip(u_int sock_fd);
 
+
 // Other functions
+void vec_filter_null(vec_void_t *v);
 
 #endif
