@@ -13,6 +13,10 @@ xps_keyval_t *http_header_create(xps_http_req_t *http_req) {
     logger(LOG_ERROR, "http_header_create()",
            "str_from_ptrs() failed for %s%s%s", !key ? "key" : "",
            !key && !value ? " and " : "", !value ? "value" : "");
+    if(key)
+      free(key);
+    if(value)
+      free(value);
     return NULL;
   }
 
@@ -132,8 +136,8 @@ int http_process_headers(xps_http_req_t *http_req, xps_buffer_t *buff) {
 
 xps_buffer_t *xps_http_req_serialize(xps_http_req_t *http_req) {
   assert(http_req != NULL);
-  /* Serialize headers into a buffer headers_str*/
 
+  /* Serialize headers into a buffer headers_str*/
   xps_buffer_t *headers_str = xps_http_serialize_headers(&(http_req->headers));
 
   if (headers_str == NULL) {

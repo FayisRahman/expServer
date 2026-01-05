@@ -331,8 +331,6 @@ int xps_http_parse_header_line(xps_http_req_t *http_req, xps_buffer_t *buff) {
   u_char *p_ch = buff->pos;
   xps_http_parser_state_t parser_state = http_req->parser_state;
 
-  
-
   for (int i = 0; i < buff->len; p_ch++, i++) {
     char ch = *p_ch;
 
@@ -451,8 +449,9 @@ xps_buffer_t *xps_http_serialize_headers(vec_void_t *headers) {
   assert(headers != NULL);
   /*create a buffer and initialize first byte to null terminator*/
   xps_buffer_t *buff = xps_buffer_create(512, 0, NULL);
-  if(buff == NULL){
-    logger(LOG_ERROR, "xps_http_serialize_headers()", "xps_buffer_create() failed");
+  if (buff == NULL) {
+    logger(LOG_ERROR, "xps_http_serialize_headers()",
+           "xps_buffer_create() failed");
     return NULL;
   }
   buff->data[0] = '\0';
@@ -460,7 +459,7 @@ xps_buffer_t *xps_http_serialize_headers(vec_void_t *headers) {
     xps_keyval_t *header = headers->data[i];
     size_t header_str_len = strlen(header->key) + strlen(header->val) + 5;
     char header_str[header_str_len];
-    sprintf(header_str, "%s: %s\n", header->key, header->val);
+    sprintf(header_str, "%s: %s\r\n", header->key, header->val);
     if ((buff->size - buff->len) < header_str_len) { // buffer is small
       u_char *new_data = realloc(buff->data, buff->size * 2);
       if (new_data == NULL) {
@@ -477,4 +476,38 @@ xps_buffer_t *xps_http_serialize_headers(vec_void_t *headers) {
     buff->len = strlen(buff->data);
   }
   return buff;
+}
+
+int xps_http_set_header(vec_void_t *headers, const char *key, const char *val) {
+  assert(headers != NULL);
+  assert(key != NULL);
+  assert(val != NULL);
+
+  xps_keyval_t *header = malloc(sizeof(xps_keyval_t));
+  if (header == NULL) {
+    logger(LOG_ERROR, "xps_http_set_header()", "malloc() failed for 'header'");
+    return E_FAIL;
+  }
+
+  /* allocate memory for header->key and header->val */
+  header->key = malloc(sizeof(char) * (strlen(key) + 1));
+  header->val = malloc(sizeof(char) * (strlen(val) + 1));
+
+  if (header->key == NULL || header->val == NULL) {
+    free(header->key);
+    free(header->val);
+    free(header);
+    logger(LOG_ERROR, "xps_http_set_header()",
+           "malloc() failed for 'header->key' or 'header->val'");
+    return E_FAIL;
+  }
+
+  /* copy contents of key and value given into the header fields */
+  strcpy(header->key, key);
+  strcpy(header->val, val);
+
+  /* add the header to header list */
+  vec_push(headers, header);
+
+  return OK;
 }
