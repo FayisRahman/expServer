@@ -132,12 +132,14 @@ void listener_connection_handler(void *ptr) {
     }
 
     // Creating connection instance
-    xps_connection_t *client = xps_connection_create(listener->core, conn_sock_fd, listener); // Will be implemented later
+    xps_connection_t *client = xps_connection_create(listener->core, conn_sock_fd); // Will be implemented later
     if (client == NULL) {
       logger(LOG_ERROR, "xps_listener_connection_handler()", "xps_connection_create() failed");
       close(conn_sock_fd);
       return;
     }
+
+    client->listener = listener;
 
     xps_pipe_create(listener->core, DEFAULT_PIPE_BUFF_THRESH, client->source, client->sink);
 

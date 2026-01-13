@@ -1,7 +1,6 @@
 #include "xps_upstream.h"
 
-xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
-                                      u_int port) {
+xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host, u_int port) {
   /* validate parameter */
   assert(core != NULL);
   assert(host != NULL);
@@ -25,8 +24,7 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
     return NULL;
   }
 
-  int connect_error = connect(sock_fd, upstream_addrinfo->ai_addr,
-                              upstream_addrinfo->ai_addrlen);
+  int connect_error = connect(sock_fd, upstream_addrinfo->ai_addr, upstream_addrinfo->ai_addrlen);
 
   if (!(connect_error == 0 || errno == EINPROGRESS)) {
     logger(LOG_ERROR, "xps_upstream_create()", "connect() failed");
@@ -38,8 +36,7 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
   /* create a connection to upstream with core and sock_fd*/
   xps_connection_t *connection = xps_connection_create(core, sock_fd);
   if (connection == NULL) {
-    logger(LOG_ERROR, "xps_upstream_create()",
-           "xps_connection_create() failed");
+    logger(LOG_ERROR, "xps_upstream_create()", "xps_connection_create() failed");
     perror("Error message");
     close(sock_fd);
     return NULL;

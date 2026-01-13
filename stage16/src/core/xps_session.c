@@ -466,6 +466,8 @@ void session_process_request(xps_session_t *session) {
 
     if (lookup->file_path) {
 
+      printf("file_path: %s\n",lookup->file_path);
+
       int error;
       /*create file for above path and attach to file field of session*/
       xps_file_t *file =

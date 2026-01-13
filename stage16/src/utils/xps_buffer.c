@@ -94,7 +94,7 @@ void xps_buffer_list_append(xps_buffer_list_t *buff_list, xps_buffer_t *buff) {
   buff_list->len += buff->len;
 }
 
-xps_buffer_t *  xps_buffer_list_read(xps_buffer_list_t *buff_list, size_t len) {
+xps_buffer_t *xps_buffer_list_read(xps_buffer_list_t *buff_list, size_t len) {
   assert(buff_list != NULL);
   assert(len > 0);
 

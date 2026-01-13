@@ -149,6 +149,8 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config,
     return NULL;
   }
 
+
+  //TODO: Route Selection already added in the doc need to verify it and make changes accordingly
   xps_config_server_t *server = config->servers.data[target_server_index];
   /*Find matching route block*/
   xps_config_route_t *route = NULL;
@@ -202,8 +204,7 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config,
   // Initialize type-specific fields (need to specify in doc what to do here cuz
   // TODO: its too vague on what we are doing here)
   if (lookup->type == REQ_FILE_SERVE) {
-    char *resource_path = path_join(
-        route->dir_path,
+    char *resource_path = path_join(route->dir_path,
         h_pathname +
             strlen(route->req_path)); /*need to specify this in the doc*/
     if (!is_abs_path(
@@ -214,6 +215,8 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config,
       free(temp);
       free(resource_path);
       resource_path = temp2;
+
+      printf("resource_path: %s\n", resource_path);
     }
     // is file
     if (is_file(resource_path)) {
@@ -233,9 +236,8 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config,
         }
       }
       if (!index_file_found) {
-        // TDOD: check this out and need to see if it is there or not
+        // as of stage 16 this is just this...we have not yet implemented directory browsing
         free(resource_path);
-        // Leave lookup->file_path as NULL (already set on line 202)
       }
     } else {
       free(resource_path);

@@ -20,7 +20,7 @@ void strrev(char *str) {
     }
 }
 
-xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd, xps_listener_t *listener) {
+xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
 
   xps_connection_t *connection = malloc(sizeof(xps_connection_t));
   if (connection == NULL) {
@@ -50,7 +50,7 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd, xps_lis
   // Init values
   connection->core = core;
   connection->sock_fd = sock_fd;
-  connection->listener = listener;
+  
   connection->remote_ip = get_remote_ip(sock_fd);
   connection->source = source;
   connection->sink = sink;
@@ -237,7 +237,7 @@ void connection_sink_handler(void *ptr) {
     }
 
     if (write_n == 0)
-    return;
+      return;
 
     if (xps_buffer_list_clear(sink->pipe->buff_list,write_n) != OK){
       logger(LOG_ERROR, "connection_sink_handler()", "failed to clear %d bytes from sink", write_n);
