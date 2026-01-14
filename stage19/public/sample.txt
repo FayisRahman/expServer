@@ -1,0 +1,11 @@
+Explanation
+The error "Passing 'const char *' to parameter of type 'char *' discards qualifiers" occurred because strcpy takes a char * as its first argument (the destination), intending to modify it. However, file->file_path is defined as const char * in the xps_file_t struct, meaning it should not be modified.
+
+Additionally, using strcpy on file->file_path was unsafe because file->file_path was an uninitialized pointer (garbage value) after malloc. Writing to it would likely cause a segmentation fault.
+
+The Fix
+I replaced strcpy(file->file_path, file_path) with file->file_path = strdup(file_path).
+
+strdup allocates new memory for the string and copies the content into it, returning a pointer.
+This resolves the compile-time warning (assigning char * to const char * is valid) and the runtime crash (by properly allocating memory).
+I also added <stdlib.h> and <string.h> which were missing.
