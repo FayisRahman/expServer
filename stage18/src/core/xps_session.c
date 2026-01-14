@@ -446,6 +446,45 @@ void session_process_request(xps_session_t *session) {
 
   session->lookup = lookup;
 
+  // TODO: stage18 ip_whitelist and ip_blacklist usage
+
+  // check whitelist exist
+  if (lookup->ip_whitelist.length > 0) {
+    const char *client_ip = session->client->remote_ip;
+    bool is_allowed = false;
+    for (size_t i = 0; i < lookup->ip_whitelist.length; i++) {
+      const char *ip_w = lookup->ip_whitelist.data[i];
+      if (strcmp(client_ip, ip_w) == 0) {
+        is_allowed = true;
+        break;
+      }
+    }
+    if (!is_allowed) { // ip is not whitelisted
+      logger(LOG_DEBUG, "session_process_request()", "client ip %s is not whitelisted", client_ip);
+      xps_http_res_t *http_res = xps_http_res_create(session->core, HTTP_FORBIDDEN);
+      xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
+      set_to_client_buff(session, http_res_buff);
+      xps_http_res_destroy(http_res);
+      return;
+    }
+  }
+
+  // check in blacklist
+  if (lookup->ip_blacklist.length > 0) {
+    const char *client_ip = session->client->remote_ip;
+    for (size_t i = 0; i < lookup->ip_blacklist.length; i++) {
+      const char *ip_b = lookup->ip_blacklist.data[i];
+      if (strcmp(client_ip, ip_b) == 0) { // ip is blacklisted so not allowed
+        logger(LOG_DEBUG, "session_process_request()", "client ip %s is blacklisted", client_ip);
+        xps_http_res_t *http_res = xps_http_res_create(session->core, HTTP_FORBIDDEN);
+        xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
+        set_to_client_buff(session, http_res_buff);
+        xps_http_res_destroy(http_res);
+        return;
+      }
+    }
+  }
+
   if (lookup->type == REQ_FILE_SERVE) {
 
     // TODO: explain this part (directory browsing)

@@ -81,6 +81,8 @@ void xps_config_destroy(xps_config_t *config) {
       xps_config_route_t *route = server->routes.data[j];
       vec_deinit(&(route->index));
       vec_deinit(&(route->upstreams));
+      vec_deinit(&(route->ip_whitelist)); // TODO: stage18
+      vec_deinit(&(route->ip_blacklist));
       free(route);
     }
     vec_deinit(&(server->routes));
@@ -192,6 +194,8 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
   /*till here |^*/
   lookup->http_status_code = route->http_status_code;
   lookup->redirect_url = route->redirect_url;
+  lookup->ip_whitelist = route->ip_whitelist; // TODO: stage18
+  lookup->ip_blacklist = route->ip_blacklist; // TODO: stage18
 
   // Initialize type-specific fields
   if (lookup->type == REQ_FILE_SERVE) {
@@ -226,7 +230,6 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
       }
 
       // no index file found so we show the directory contents (directory browsing)
-      // TODO: explain this part
       if (!index_file_found) {
         lookup->dir_path = resource_path;
       }
@@ -282,6 +285,8 @@ void parse_server(JSON_Object *server_object, xps_config_server_t *server) {
       }
       vec_init(&(route->upstreams));
       vec_init(&(route->index));
+      vec_init(&route->ip_whitelist);
+      vec_init(&route->ip_blacklist);
       parse_route(route_object, route);
       vec_push(&(server->routes), route);
     }
@@ -363,6 +368,40 @@ void parse_route(JSON_Object *route_object, xps_config_route_t *route) {
       vec_push(&(route->upstreams), (void *)upstream);
     }
   }
+
+  //TODO: stage18 -> ip_whitelist and ip_blacklist
+  JSON_Array *ip_whitelist = json_object_get_array(route_object,  "ip_whitelist");
+  JSON_Array *ip_blacklist = json_object_get_array(route_object,  "ip_blacklist");
+
+  if(ip_whitelist && !ip_blacklist){
+    for(size_t i = 0; i < json_array_get_count(ip_whitelist); i++)
+      vec_push(&(route->ip_whitelist), (void *)json_array_get_string(ip_whitelist, i));
+  }else if(ip_blacklist && !ip_whitelist){
+    for(size_t i = 0; i < json_array_get_count(ip_blacklist); i++)
+      vec_push(&(route->ip_blacklist), (void *)json_array_get_string(ip_blacklist, i));
+  }else if(ip_whitelist && ip_blacklist) {
+    // since both whitelist and blacklist are present we just need to filter the whitelist ips from the blacklist ips and then we dont requrie blacklist ip array
+    // the reason for that is when both exist teh whitelist takes priority as we just need to allow ips present in the whitelist
+    // so what we do here is we remove ips from whitelist array that is also present in blacklist array as well
+
+    for(size_t i = 0; i < json_array_get_count(ip_whitelist); i++){
+      const char *ip_w = json_array_get_string(ip_whitelist, i);
+      
+      bool in_blacklist = false;
+      for(size_t j = 0; j < json_array_get_count(ip_blacklist); j++){
+        const char *ip_b = json_array_get_string(ip_blacklist, j);
+        if(strcmp(ip_w,ip_b) == 0){
+          in_blacklist = true;
+          break;
+        }
+      }
+
+      if(!in_blacklist)
+        vec_push(&(route->ip_whitelist), (void *)ip_w);
+    }
+  }
+
+
 }
 
 void parse_all_listeners(vec_void_t *_all_listeners, xps_config_server_t *server) {

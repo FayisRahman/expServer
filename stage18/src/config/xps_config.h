@@ -28,6 +28,8 @@ struct xps_config_route_s {
   const char *type;
   const char *dir_path;
   vec_void_t index;
+  vec_void_t ip_whitelist; // TODO: stage18
+  vec_void_t ip_blacklist; // TODO: stage18
   vec_void_t upstreams;
   u_int http_status_code;
   const char *redirect_url;
@@ -48,9 +50,8 @@ struct xps_config_lookup_s {
   /* file_serve */
   char *file_path; // absolute path
   char *dir_path;  // absolute path
-  long
-      file_start; // parse range header
-                  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests
+  long file_start; // parse range header
+                   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests
   long file_end;
 
   /* reverse_proxy */
@@ -62,16 +63,14 @@ struct xps_config_lookup_s {
 
   /* common */
   bool keep_alive;
-  vec_void_t ip_whitelist;
-  vec_void_t ip_blacklist;
+  vec_void_t ip_whitelist; //TODO: stage18
+  vec_void_t ip_blacklist; //TODO: stage18
 };
 
 xps_config_t *xps_config_create(const char *config_path);
 void xps_config_destroy(xps_config_t *config);
-xps_config_lookup_t *xps_config_lookup(xps_config_t *config,
-                                       xps_http_req_t *http_req,
+xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *http_req,
                                        xps_connection_t *client, int *error);
-void xps_config_lookup_destroy(xps_config_lookup_t *config_lookup,
-                               xps_core_t *core);
+void xps_config_lookup_destroy(xps_config_lookup_t *config_lookup, xps_core_t *core);
 
 #endif

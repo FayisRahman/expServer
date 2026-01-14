@@ -16,6 +16,9 @@
 					"dir_path": "../../",
 					"index": [
 						"index.html"
+					],
+					"ip_blacklist": [
+						"127.0.0.1"
 					]
 				},
 				{
@@ -39,6 +42,9 @@
 					"type": "reverse_proxy",
 					"upstreams": [
 						"localhost:3000"
+					],
+					"ip_whitelist": [
+						"127.0.0.1"
 					]
 				}
 			]
