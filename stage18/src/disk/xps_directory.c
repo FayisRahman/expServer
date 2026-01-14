@@ -104,7 +104,5 @@ xps_buffer_t *xps_directory_browsing(const char *dir_path, const char *pathname)
   directory_browsing->pos += written;
   directory_browsing->len += written;
 
-  logger(LOG_DEBUG, "xps_directory_browsing()", "directory browsing created successfully");
-
   return directory_browsing;
 }
