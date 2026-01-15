@@ -17,9 +17,10 @@
 					"index": [
 						"index.html"
 					],
-					"ip_blacklist": [
-						"127.0.0.1"
-					]
+					
+					"gzip_enable": true,
+					"gzip_level": 8,
+					"gzip_mime_types" : ["text/x-c"]
 				},
 				{
 					"req_path": "/hello",

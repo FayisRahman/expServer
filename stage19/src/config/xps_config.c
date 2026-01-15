@@ -1,9 +1,40 @@
 #include "xps_config.h"
+#include <stdio.h>
 
 void parse_server(JSON_Object *server_object, xps_config_server_t *server);
 void parse_listener(JSON_Object *listener_object, xps_config_listener_t *listener);
 void parse_route(JSON_Object *route_object, xps_config_route_t *route);
 void parse_all_listeners(vec_void_t *_all_listeners, xps_config_server_t *server);
+
+const char *default_gzip_mimes[] = {
+  // TODO: stage19
+  "text/html",
+  "text/css",
+  "text/plain",
+  "text/xml",
+  "text/x-component",
+  "text/javascript",
+  "application/x-javascript",
+  "application/javascript",
+  "application/json",
+  "application/xml",
+  "application/xhtml+xml",
+  "application/rss+xml",
+  "application/atom+xml",
+  "application/vnd.ms-fontobject",
+  "application/x-font-ttf",
+  "application/x-font-opentype",
+  "application/x-font-truetype",
+  "image/svg+xml",
+  "image/x-icon",
+  "font/ttf",
+  "font/eot",
+  "font/otf",
+  "font/opentype",
+};
+
+int n_default_gzip_mimes =
+  sizeof(default_gzip_mimes) / sizeof(default_gzip_mimes[0]); // TODO: stage19
 
 xps_config_t *xps_config_create(const char *config_path) {
   /*assert*/
@@ -81,8 +112,9 @@ void xps_config_destroy(xps_config_t *config) {
       xps_config_route_t *route = server->routes.data[j];
       vec_deinit(&(route->index));
       vec_deinit(&(route->upstreams));
-      vec_deinit(&(route->ip_whitelist)); // TODO: stage18
+      vec_deinit(&(route->ip_whitelist));
       vec_deinit(&(route->ip_blacklist));
+      vec_deinit(&(route->gzip_mime_types));
       free(route);
     }
     vec_deinit(&(server->routes));
@@ -190,12 +222,15 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
   lookup->dir_path = NULL;
   lookup->file_start = 0;
   lookup->file_end = -1;
+  lookup->gzip_enable =
+    route->gzip_enable && h_accept_encoding && strstr(h_accept_encoding, "gzip"); // TODO: stage19
+  lookup->gzip_level = route->gzip_level;                                         // TODO: stage19
   lookup->upstream = route->upstreams.length > 0 ? route->upstreams.data[0] : NULL;
   /*till here |^*/
   lookup->http_status_code = route->http_status_code;
   lookup->redirect_url = route->redirect_url;
-  lookup->ip_whitelist = route->ip_whitelist; // TODO: stage18
-  lookup->ip_blacklist = route->ip_blacklist; // TODO: stage18
+  lookup->ip_whitelist = route->ip_whitelist;
+  lookup->ip_blacklist = route->ip_blacklist;
 
   // Initialize type-specific fields
   if (lookup->type == REQ_FILE_SERVE) {
@@ -236,6 +271,35 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     } else {
       free(resource_path);
     }
+
+    // gzip_enable TODO: stage19
+
+    if (lookup->file_path) {
+      const char *mime = xps_get_mime(lookup->file_path);
+
+      if (mime) {
+        bool mime_match = false;
+        for (size_t i = 0; i < n_default_gzip_mimes; i++) {
+          if (strcmp(mime, default_gzip_mimes[i]) == 0) {
+            mime_match = true;
+
+            break;
+          }
+        }
+
+        for (size_t i = 0; i < route->gzip_mime_types.length && !mime_match; i++) {
+          if (strcmp(mime, route->gzip_mime_types.data[i]) == 0) {
+            mime_match = true;
+            break;
+          }
+        }
+
+        lookup->gzip_enable = lookup->gzip_enable && mime_match;
+      } else {
+        lookup->gzip_enable = false;
+      }
+    }
+
     logger(LOG_DEBUG, "xps_config_file_lookup()", "requested file path: %s", lookup->file_path);
     *error = OK;
   }
@@ -287,6 +351,9 @@ void parse_server(JSON_Object *server_object, xps_config_server_t *server) {
       vec_init(&(route->index));
       vec_init(&route->ip_whitelist);
       vec_init(&route->ip_blacklist);
+      vec_init(&route->gzip_mime_types);
+      route->gzip_enable = false;
+      route->gzip_level = -1; // valid values: [-1, 9]
       parse_route(route_object, route);
       vec_push(&(server->routes), route);
     }
@@ -344,6 +411,24 @@ void parse_route(JSON_Object *route_object, xps_config_route_t *route) {
         vec_push(&(route->index), (void *)index);
       }
 
+    // TODO: gzip stage19
+
+    // gzip_enable
+    route->gzip_enable = (bool)json_object_get_boolean(route_object, "gzip_enable");
+
+    // gzip level
+    route->gzip_level = (int)json_object_get_number(route_object, "gzip_level");
+    if (route->gzip_level < -1 || route->gzip_level > 9) {
+      logger(LOG_ERROR, "parse_route()", "gzip_level out of range -1 to 9");
+      return;
+    }
+
+    // gzip_mime_types
+    JSON_Array *gzip_mime_types = json_object_get_array(route_object, "gzip_mime_types");
+    if (gzip_mime_types)
+      for (size_t i = 0; i < json_array_get_count(gzip_mime_types); i++)
+        vec_push(&route->gzip_mime_types, (void *)json_array_get_string(gzip_mime_types, i));
+
   } else if (strcmp(route->type, "redirect") == 0) {
 
     /*if redirect*/
@@ -369,39 +454,38 @@ void parse_route(JSON_Object *route_object, xps_config_route_t *route) {
     }
   }
 
-  //TODO: stage18 -> ip_whitelist and ip_blacklist
-  JSON_Array *ip_whitelist = json_object_get_array(route_object,  "ip_whitelist");
-  JSON_Array *ip_blacklist = json_object_get_array(route_object,  "ip_blacklist");
+  JSON_Array *ip_whitelist = json_object_get_array(route_object, "ip_whitelist");
+  JSON_Array *ip_blacklist = json_object_get_array(route_object, "ip_blacklist");
 
-  if(ip_whitelist && !ip_blacklist){
-    for(size_t i = 0; i < json_array_get_count(ip_whitelist); i++)
+  if (ip_whitelist && !ip_blacklist) {
+    for (size_t i = 0; i < json_array_get_count(ip_whitelist); i++)
       vec_push(&(route->ip_whitelist), (void *)json_array_get_string(ip_whitelist, i));
-  }else if(ip_blacklist && !ip_whitelist){
-    for(size_t i = 0; i < json_array_get_count(ip_blacklist); i++)
+  } else if (ip_blacklist && !ip_whitelist) {
+    for (size_t i = 0; i < json_array_get_count(ip_blacklist); i++)
       vec_push(&(route->ip_blacklist), (void *)json_array_get_string(ip_blacklist, i));
-  }else if(ip_whitelist && ip_blacklist) {
-    // since both whitelist and blacklist are present we just need to filter the whitelist ips from the blacklist ips and then we dont requrie blacklist ip array
-    // the reason for that is when both exist teh whitelist takes priority as we just need to allow ips present in the whitelist
-    // so what we do here is we remove ips from whitelist array that is also present in blacklist array as well
+  } else if (ip_whitelist && ip_blacklist) {
+    // since both whitelist and blacklist are present we just need to filter the whitelist ips from
+    // the blacklist ips and then we dont requrie blacklist ip array the reason for that is when
+    // both exist teh whitelist takes priority as we just need to allow ips present in the whitelist
+    // so what we do here is we remove ips from whitelist array that is also present in blacklist
+    // array as well
 
-    for(size_t i = 0; i < json_array_get_count(ip_whitelist); i++){
+    for (size_t i = 0; i < json_array_get_count(ip_whitelist); i++) {
       const char *ip_w = json_array_get_string(ip_whitelist, i);
-      
+
       bool in_blacklist = false;
-      for(size_t j = 0; j < json_array_get_count(ip_blacklist); j++){
+      for (size_t j = 0; j < json_array_get_count(ip_blacklist); j++) {
         const char *ip_b = json_array_get_string(ip_blacklist, j);
-        if(strcmp(ip_w,ip_b) == 0){
+        if (strcmp(ip_w, ip_b) == 0) {
           in_blacklist = true;
           break;
         }
       }
 
-      if(!in_blacklist)
+      if (!in_blacklist)
         vec_push(&(route->ip_whitelist), (void *)ip_w);
     }
   }
-
-
 }
 
 void parse_all_listeners(vec_void_t *_all_listeners, xps_config_server_t *server) {

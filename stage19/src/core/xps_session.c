@@ -81,6 +81,7 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
   session->from_client_buff = NULL;
   session->http_req = NULL;
   session->lookup = NULL;
+  session->gzip = NULL; // TODO: stage19
   session->client_sink->ready = true;
   session->upstream_sink->ready = true;
   session->file_sink->ready = true;
@@ -510,7 +511,7 @@ void session_process_request(xps_session_t *session) {
       return;
     }
 
-    if (lookup->file_path) {
+    else if (lookup->file_path) {
 
       printf("file_path: %s\n", lookup->file_path);
 
@@ -550,18 +551,38 @@ void session_process_request(xps_session_t *session) {
       session->file = file;
       xps_http_res_t *res = xps_http_res_create(session->core, HTTP_OK);
       if (session->file->mime_type) {
-        char len_str[16];
-        sprintf(len_str, "%zu", session->file->size);
-        xps_http_set_header(&(res->headers), "Content-Length", len_str);
+        // TODO: stage19 Only set Content-Length if NOT using gzip (compressed size is unknown)
+        if (!lookup->gzip_enable) {
+          char len_str[16];
+          sprintf(len_str, "%zu", session->file->size);
+          xps_http_set_header(&(res->headers), "Content-Length", len_str);
+        } else {
+          // Tell browser that content is gzip compressed
+          xps_http_set_header(&(res->headers), "Content-Encoding", "gzip");
+        }
         xps_http_set_header(&(res->headers), "Content-Type", session->file->mime_type);
       }
       xps_buffer_t *buff = xps_http_res_serialize(res);
       /*set buff to to_client_buff*/
       set_to_client_buff(session, buff);
-      /*create pipe with session->file->source and session->file_sink*/
-      xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source,
-                      session->file_sink);
+
       xps_http_res_destroy(res);
+
+      // TODO: stage19 linking gzip module with session module stage19
+
+      if (lookup->gzip_enable) {
+
+        /*create pipes with file->source and gzip->sink and then with gzip->source and
+         * session->file_sink*/
+        xps_gzip_t *gzip = xps_gzip_create(lookup->gzip_level);
+        session->gzip = gzip;
+        xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source, gzip->sink);
+        xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, gzip->source, session->file_sink);
+      } else {
+        /*create pipe with session->file->source and session->file_sink*/
+        xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source,
+                        session->file_sink);
+      }
     }
   } else if (lookup->type == REQ_REVERSE_PROXY) {
 
