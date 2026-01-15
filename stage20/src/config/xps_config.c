@@ -7,7 +7,6 @@ void parse_route(JSON_Object *route_object, xps_config_route_t *route);
 void parse_all_listeners(vec_void_t *_all_listeners, xps_config_server_t *server);
 
 const char *default_gzip_mimes[] = {
-  // TODO: stage19
   "text/html",
   "text/css",
   "text/plain",
@@ -33,8 +32,7 @@ const char *default_gzip_mimes[] = {
   "font/opentype",
 };
 
-int n_default_gzip_mimes =
-  sizeof(default_gzip_mimes) / sizeof(default_gzip_mimes[0]); // TODO: stage19
+int n_default_gzip_mimes = sizeof(default_gzip_mimes) / sizeof(default_gzip_mimes[0]);
 
 xps_config_t *xps_config_create(const char *config_path) {
   /*assert*/
@@ -223,8 +221,8 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
   lookup->file_start = 0;
   lookup->file_end = -1;
   lookup->gzip_enable =
-    route->gzip_enable && h_accept_encoding && strstr(h_accept_encoding, "gzip"); // TODO: stage19
-  lookup->gzip_level = route->gzip_level;                                         // TODO: stage19
+    route->gzip_enable && h_accept_encoding && strstr(h_accept_encoding, "gzip");
+  lookup->gzip_level = route->gzip_level;
   lookup->upstream = route->upstreams.length > 0 ? route->upstreams.data[0] : NULL;
   /*till here |^*/
   lookup->http_status_code = route->http_status_code;
@@ -272,8 +270,6 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
       free(resource_path);
     }
 
-    // gzip_enable TODO: stage19
-
     if (lookup->file_path) {
       const char *mime = xps_get_mime(lookup->file_path);
 
@@ -301,7 +297,25 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     }
 
     logger(LOG_DEBUG, "xps_config_file_lookup()", "requested file path: %s", lookup->file_path);
-    *error = OK;
+
+  } else if (lookup->type == REQ_REVERSE_PROXY) {
+    // TODO: stage20 Load Balacning
+    
+      if (strcmp(route->load_balancing, "round_robin") == 0) {
+
+        int index = route->_round_robin_counter % route->upstreams.length;
+        route->_round_robin_counter++;
+        printf("current upstream index: %d", index);
+        lookup->upstream = route->upstreams.data[index];
+      } else if (strcmp(route->load_balancing, "ip_hash") == 0) {
+        u_int ip;
+        inet_pton(AF_INET, client->remote_ip, &ip);
+        int index = ip % route->upstreams.length;
+        lookup->upstream = route->upstreams.data[index];
+      } else {
+        logger(LOG_ERROR, "xps_config_lookup()", "invalid load balancing strategy");
+      }
+    
   }
   *error = OK;
   return lookup;
@@ -347,6 +361,9 @@ void parse_server(JSON_Object *server_object, xps_config_server_t *server) {
         logger(LOG_ERROR, "parse_server()", "malloc() failed for route");
         return;
       }
+      route->req_path = NULL;
+      route->type = NULL;
+      route->dir_path = NULL;
       vec_init(&(route->upstreams));
       vec_init(&(route->index));
       vec_init(&route->ip_whitelist);
@@ -354,7 +371,14 @@ void parse_server(JSON_Object *server_object, xps_config_server_t *server) {
       vec_init(&route->gzip_mime_types);
       route->gzip_enable = false;
       route->gzip_level = -1; // valid values: [-1, 9]
+      route->load_balancing = "round_robin";
+      route->_round_robin_counter = 0;
+      route->http_status_code = 0;
+      route->redirect_url = NULL;
+      route->keep_alive = false;
+
       parse_route(route_object, route);
+
       vec_push(&(server->routes), route);
     }
 
@@ -411,8 +435,6 @@ void parse_route(JSON_Object *route_object, xps_config_route_t *route) {
         vec_push(&(route->index), (void *)index);
       }
 
-    // TODO: gzip stage19
-
     // gzip_enable
     route->gzip_enable = (bool)json_object_get_boolean(route_object, "gzip_enable");
 
@@ -452,6 +474,11 @@ void parse_route(JSON_Object *route_object, xps_config_route_t *route) {
       const char *upstream = json_array_get_string(upstreams, k);
       vec_push(&(route->upstreams), (void *)upstream);
     }
+
+    // load_balancing
+    const char *lb = json_object_get_string(route_object, "load_balancing");
+    if (lb)
+      route->load_balancing = lb;
   }
 
   JSON_Array *ip_whitelist = json_object_get_array(route_object, "ip_whitelist");

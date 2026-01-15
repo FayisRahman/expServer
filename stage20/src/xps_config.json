@@ -17,10 +17,11 @@
 					"index": [
 						"index.html"
 					],
-					
 					"gzip_enable": true,
 					"gzip_level": 8,
-					"gzip_mime_types" : ["text/x-c"]
+					"gzip_mime_types": [
+						"text/x-c"
+					]
 				},
 				{
 					"req_path": "/hello",
@@ -42,8 +43,11 @@
 					"req_path": "/",
 					"type": "reverse_proxy",
 					"upstreams": [
-						"localhost:3000"
+						"localhost:3000",
+						"localhost:3001",
+						"localhost:3002"
 					],
+					"load_balancing": "round_robin",
 					"ip_whitelist": [
 						"127.0.0.1"
 					]

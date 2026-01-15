@@ -12,7 +12,7 @@ struct xps_session_s {
   bool upstream_error_res_set;
   u_long upstream_write_bytes;
   xps_file_t *file;
-  xps_gzip_t *gzip; //TODO: stage19
+  xps_gzip_t *gzip;
 
   xps_pipe_source_t *client_source;
   xps_pipe_sink_t *client_sink;

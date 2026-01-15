@@ -18,7 +18,7 @@
 #include <libgen.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <zlib.h> //TODO: stage19 lib will need to explain this library's usage
+#include <zlib.h> 
 
 // 3rd party libraries
 #include "lib/parson/parson.h"

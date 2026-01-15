@@ -81,7 +81,7 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
   session->from_client_buff = NULL;
   session->http_req = NULL;
   session->lookup = NULL;
-  session->gzip = NULL; // TODO: stage19
+  session->gzip = NULL;  
   session->client_sink->ready = true;
   session->upstream_sink->ready = true;
   session->file_sink->ready = true;
@@ -447,8 +447,6 @@ void session_process_request(xps_session_t *session) {
 
   session->lookup = lookup;
 
-  // TODO: stage18 ip_whitelist and ip_blacklist usage
-
   // check whitelist exist
   if (lookup->ip_whitelist.length > 0) {
     const char *client_ip = session->client->remote_ip;
@@ -488,7 +486,6 @@ void session_process_request(xps_session_t *session) {
 
   if (lookup->type == REQ_FILE_SERVE) {
 
-    // TODO: explain this part (directory browsing)
     if (lookup->dir_path) {
       xps_buffer_t *dir_html =
         xps_directory_browsing(lookup->dir_path, session->http_req->pathname);
@@ -551,7 +548,7 @@ void session_process_request(xps_session_t *session) {
       session->file = file;
       xps_http_res_t *res = xps_http_res_create(session->core, HTTP_OK);
       if (session->file->mime_type) {
-        // TODO: stage19 Only set Content-Length if NOT using gzip (compressed size is unknown)
+        //  Only set Content-Length if NOT using gzip (compressed size is unknown)
         if (!lookup->gzip_enable) {
           char len_str[16];
           sprintf(len_str, "%zu", session->file->size);
@@ -568,7 +565,7 @@ void session_process_request(xps_session_t *session) {
 
       xps_http_res_destroy(res);
 
-      // TODO: stage19 linking gzip module with session module stage19
+      //  linking gzip module with session module stage19
 
       if (lookup->gzip_enable) {
 

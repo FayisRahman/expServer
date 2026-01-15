@@ -30,10 +30,12 @@ struct xps_config_route_s {
   vec_void_t index;
   vec_void_t ip_whitelist; 
   vec_void_t ip_blacklist; 
-  bool gzip_enable;             //TODO : stage19
-  int gzip_level;               //TODO : stage19
-  vec_void_t gzip_mime_types;   //TODO : stage19  // get default mime types and append the rest
+  bool gzip_enable;             
+  int gzip_level;               
+  vec_void_t gzip_mime_types;     // get default mime types and append the rest
   vec_void_t upstreams;
+  const char *load_balancing;
+  u_long _round_robin_counter;
   u_int http_status_code;
   const char *redirect_url;
   bool keep_alive;
@@ -57,8 +59,8 @@ struct xps_config_lookup_s {
                    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Range_requests
   long file_end;
 
-  bool gzip_enable;           //TODO : stage19
-  int gzip_level; // -1 to 9  //TODO : stage19
+  bool gzip_enable;           
+  int gzip_level; // -1 to 9  
 
   /* reverse_proxy */
   const char *upstream;

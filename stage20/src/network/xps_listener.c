@@ -79,7 +79,6 @@ void xps_listener_destroy(xps_listener_t *listener) {
   // Validate params
   assert(listener != NULL);
 
-  // TODO: SPECIFY TO ADD THSI CONDITION AS WELL
 
   if (listener->core != NULL) {
     // Detach listener from loop
