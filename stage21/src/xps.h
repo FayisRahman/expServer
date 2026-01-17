@@ -4,8 +4,10 @@
 // Header files
 #include <arpa/inet.h>
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <libgen.h>
 #include <netdb.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -13,12 +15,11 @@
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
-#include <time.h>
-#include <unistd.h>
-#include <libgen.h>
 #include <sys/stat.h>
-#include <dirent.h>
-#include <zlib.h> 
+#include <sys/time.h>
+#include <unistd.h>
+#include <zlib.h>
+#include <time.h>
 
 // 3rd party libraries
 #include "lib/parson/parson.h"
@@ -29,6 +30,7 @@
 #define MAX_EPOLL_EVENTS 32
 #define DEFAULT_BUFFER_SIZE 100000       // 100 KB
 #define DEFAULT_PIPE_BUFF_THRESH 1000000 // 1 MB
+#define DEFAULT_HTTP_REQ_TIMEOUT_MSEC 60000 // 60sec
 #define DEFAULT_NULLS_THRESH 32
 #define LOCALHOST "127.0.0.1"
 #define SERVER_NAME "expServer"
@@ -72,6 +74,7 @@ struct xps_config_route_s;
 struct xps_config_lookup_s;
 struct xps_cliargs_s;
 struct xps_gzip_s;
+struct xps_timer_s;
 
 // Struct typedefs
 typedef struct xps_core_s xps_core_t;
@@ -95,6 +98,7 @@ typedef struct xps_config_route_s xps_config_route_t;
 typedef struct xps_config_lookup_s xps_config_lookup_t;
 typedef struct xps_cliargs_s xps_cliargs_t;
 typedef struct xps_gzip_s xps_gzip_t;
+typedef struct xps_timer_s xps_timer_t;
 // Function typedefs
 typedef void (*xps_handler_t)(void *ptr);
 
@@ -104,10 +108,11 @@ typedef void (*xps_handler_t)(void *ptr);
 #include "core/xps_loop.h"
 #include "core/xps_pipe.h"
 #include "core/xps_session.h"
-#include "disk/xps_file.h"
-#include "disk/xps_mime.h"
+#include "core/xps_timer.h"
 #include "disk/xps_directory.h"
+#include "disk/xps_file.h"
 #include "disk/xps_gzip.h"
+#include "disk/xps_mime.h"
 #include "http/xps_http.h"
 #include "http/xps_http_req.h"
 #include "http/xps_http_res.h"
@@ -115,8 +120,8 @@ typedef void (*xps_handler_t)(void *ptr);
 #include "network/xps_listener.h"
 #include "network/xps_upstream.h"
 #include "utils/xps_buffer.h"
+#include "utils/xps_cliargs.h"
 #include "utils/xps_logger.h"
 #include "utils/xps_utils.h"
-#include "utils/xps_cliargs.h"
 
 #endif

@@ -15,6 +15,7 @@ void set_to_client_buff(xps_session_t *session, xps_buffer_t *buff);
 void set_from_client_buff(xps_session_t *session, xps_buffer_t *buff);
 void session_check_destroy(xps_session_t *session);
 void session_process_request(xps_session_t *session);
+void session_timer_handler(void *ptr); //TODO: stage21
 
 // custom function
 void session_destroy_pipes(xps_session_t *session);
@@ -44,6 +45,13 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
   xps_session_t *session = malloc(sizeof(xps_session_t));
   if (session == NULL) {
     logger(LOG_ERROR, "xps_session_create()", "malloc() failed for 'session'");
+    return NULL;
+  }
+
+  session->timer = xps_timer_create(core, DEFAULT_HTTP_REQ_TIMEOUT_MSEC, (void *)session, session_timer_handler);
+  if (session->timer == NULL) {
+    logger(LOG_ERROR, "xps_session_create()", "xps_timer_create() failed");
+    free(session);
     return NULL;
   }
 
@@ -104,33 +112,6 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
 
   logger(LOG_DEBUG, "xps_session_create()", "created session");
 
-  // if (client->listener->port == 8001) {
-  //   xps_connection_t *upstream =
-  //       xps_upstream_create(core, client->listener->host, 3000);
-  //   if (upstream == NULL) {
-  //     logger(LOG_ERROR, "xps_session_create()", "xps_upstream_create()
-  //     failed"); perror("Error message"); xps_session_destroy(session); return
-  //     NULL;
-  //   }
-  //   session->upstream = upstream;
-  //   xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, session->upstream_source,
-  //                   upstream->sink);
-  //   xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, upstream->source,
-  //                   session->upstream_sink);
-  // } else if (client->listener->port == 8002) {
-  //   int error;
-  //   xps_file_t *file = xps_file_create(core, "../public/sample.txt", &error);
-  //   if (file == NULL) {
-  //     logger(LOG_ERROR, "xps_session_create()", "xps_file_create() failed");
-  //     perror("Error message");
-  //     xps_session_destroy(session);
-  //     return NULL;
-  //   }
-  //   session->file = file;
-  //   xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, file->source,
-  //                   session->file_sink);
-  // }
-
   return session;
 }
 
@@ -147,6 +128,8 @@ void client_source_handler(void *ptr) {
     return;
   }
   xps_buffer_destroy(session->to_client_buff);
+
+  xps_timer_update(session->timer, DEFAULT_HTTP_REQ_TIMEOUT_MSEC);
 
   set_to_client_buff(session, NULL);
   session_check_destroy(session);
@@ -172,6 +155,8 @@ void client_sink_handler(void *ptr) {
     logger(LOG_ERROR, "client_sink_handler()", "xps_pipe_sink_read() failed");
     return;
   }
+
+  xps_timer_update(session->timer, DEFAULT_HTTP_REQ_TIMEOUT_MSEC);
 
   if (session->http_req == NULL) { // http requset is not recieved till now//
     int error;
@@ -389,6 +374,9 @@ void xps_session_destroy(xps_session_t *session) {
   if (session->lookup)
     xps_config_lookup_destroy(session->lookup, session->core);
 
+  if (session->timer)
+    xps_timer_destroy(session->timer);
+
   if (session->to_client_buff != NULL)
     xps_buffer_destroy(session->to_client_buff);
   if (session->from_client_buff != NULL)
@@ -425,6 +413,10 @@ void session_process_request(xps_session_t *session) {
     xps_http_res_destroy(res);
     return;
   }
+
+  char temp_str[100];
+  sprintf(temp_str, "%s:%u", session->client->listener->host, session->client->listener->port);
+  logger(LOG_HTTP, temp_str, "%s %s", session->http_req->method, session->http_req->path);
 
   int lookup_error;
   xps_config_lookup_t *lookup =
@@ -616,4 +608,13 @@ void session_process_request(xps_session_t *session) {
     xps_session_destroy(session);
     return;
   }
+}
+
+void session_timer_handler(void *ptr){
+  assert(ptr != NULL);
+
+  xps_session_t *session = ptr;
+
+  logger(LOG_WARNING, "session_timer_handler()", "http req timeout");
+  xps_session_destroy(session);
 }

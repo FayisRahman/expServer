@@ -2,12 +2,15 @@
 
 xps_core_t **cores;
 xps_cliargs_t *cliargs;
-int n_cores;
+int n_cores = 0;
 int n_listeners;
+pthread_t *thread_ids;
+int n_threads;
 
 void sigint_handler(int signum);
 int cores_create(xps_config_t *config);
 void cores_destroy();
+int threads_create(xps_core_t **cores, int n_cores);
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, sigint_handler);           // for handling ctrl+c
@@ -27,7 +30,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  // Start all cores' event loops
+  // Start all cores' event loops using threads
   for (int i = 0; i < n_cores; i++) {
     xps_core_start(cores[i]);
   }
@@ -130,4 +133,8 @@ void cores_destroy() {
   }
   free(cores);
   logger(LOG_DEBUG, "cores_destroy()", "destroyed cores");
+}
+
+int threads_create(xps_core_t **cores, int n_cores){
+  
 }

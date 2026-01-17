@@ -192,3 +192,6 @@ bool is_dir(char *path) {
 
   return S_ISDIR(path_stat.st_mode);
 }
+
+/*Time*/
+u_long timeval_to_msec(struct timeval val) { return (val.tv_sec * 1000) + (val.tv_usec / 1000); }

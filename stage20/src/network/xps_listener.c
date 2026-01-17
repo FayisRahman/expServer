@@ -79,7 +79,6 @@ void xps_listener_destroy(xps_listener_t *listener) {
   // Validate params
   assert(listener != NULL);
 
-
   if (listener->core != NULL) {
     // Detach listener from loop
     xps_loop_detach(listener->core->loop, listener->sock_fd);
@@ -111,11 +110,17 @@ void xps_listener_connection_handler(void *ptr) {
     struct sockaddr conn_addr;
     socklen_t conn_addr_len = sizeof(conn_addr);
 
+    logger(LOG_INFO, "xps_listener_connection_handler()", "core trying for connection coreId: %d",
+           listener->core->loop->epoll_fd);
+
     // Accepting connection
     int conn_sock_fd = accept(listener->sock_fd, &conn_addr, &conn_addr_len);
 
-    if (conn_sock_fd < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+    if (conn_sock_fd < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+      logger(LOG_INFO, "xps_listener_connection_handler()",
+             "curr CoreId: %d Other core won in creating the connection",listener->core->loop->epoll_fd);
       break;
+    }
 
     if (conn_sock_fd < 0) {
       logger(LOG_ERROR, "xps_listener_connection_handler()", "accept() failed");

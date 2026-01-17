@@ -242,7 +242,7 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
       free(resource_path);
       resource_path = temp2;
 
-      printf("resource_path: %s\n", resource_path);
+      // printf("resource_path: %s\n", resource_path);
     }
     // is file
     if (is_file(resource_path)) {

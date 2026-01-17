@@ -104,32 +104,6 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
 
   logger(LOG_DEBUG, "xps_session_create()", "created session");
 
-  // if (client->listener->port == 8001) {
-  //   xps_connection_t *upstream =
-  //       xps_upstream_create(core, client->listener->host, 3000);
-  //   if (upstream == NULL) {
-  //     logger(LOG_ERROR, "xps_session_create()", "xps_upstream_create()
-  //     failed"); perror("Error message"); xps_session_destroy(session); return
-  //     NULL;
-  //   }
-  //   session->upstream = upstream;
-  //   xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, session->upstream_source,
-  //                   upstream->sink);
-  //   xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, upstream->source,
-  //                   session->upstream_sink);
-  // } else if (client->listener->port == 8002) {
-  //   int error;
-  //   xps_file_t *file = xps_file_create(core, "../public/sample.txt", &error);
-  //   if (file == NULL) {
-  //     logger(LOG_ERROR, "xps_session_create()", "xps_file_create() failed");
-  //     perror("Error message");
-  //     xps_session_destroy(session);
-  //     return NULL;
-  //   }
-  //   session->file = file;
-  //   xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, file->source,
-  //                   session->file_sink);
-  // }
 
   return session;
 }

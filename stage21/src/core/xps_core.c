@@ -26,10 +26,14 @@ xps_core_t *xps_core_create(xps_config_t *config) {
   vec_init(&(core->connections));
   vec_init(&(core->pipes));
   vec_init(&(core->sessions));
+  vec_init(&(core->timers));
   core->n_null_listeners = 0;
   core->n_null_connections = 0;
   core->n_null_pipes = 0;
   core->n_null_sessions = 0;
+  core->n_null_timers = 0;
+  core->init_time_msec = 0;
+  core->curr_time_msec = 0;
   logger(LOG_DEBUG, "xps_core_create()", "created core");
 
   return core;
@@ -78,6 +82,14 @@ void xps_core_destroy(xps_core_t *core) {
   }
   vec_deinit(&(core->sessions));
 
+  /* destory all the timers and de-initialize core->timers */
+  for (int i = 0; i < core->timers.length; i++) {
+    xps_timer_t *timer = core->timers.data[i];
+    if (timer != NULL)
+      xps_timer_destroy(timer);
+  }
+  vec_deinit(&(core->timers));
+
   /* destory loop attached to core */
   xps_loop_destroy(core->loop);
 
@@ -103,4 +115,24 @@ void xps_core_start(xps_core_t *core) {
 
   /* run loop instance using xps_loop_run() */
   xps_loop_run(core->loop);
+}
+
+//TODO: stage21
+void xps_core_update_time(xps_core_t *core){
+  assert(core != NULL);
+
+  struct timeval time;
+  if (gettimeofday(&time, NULL) < 0) {
+    logger(LOG_ERROR, "xps_core_update_time()", "gettimeofday() failed");
+    perror("Error message");
+    return;
+  }
+
+  // Set curr_time_msec
+  core->curr_time_msec = timeval_to_msec(time);
+
+  // Set 'init_time_msec'
+  if (core->init_time_msec == 0)
+    core->init_time_msec = core->curr_time_msec;
+
 }

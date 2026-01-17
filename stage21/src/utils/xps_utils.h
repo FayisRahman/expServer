@@ -25,7 +25,8 @@ bool is_abs_path(char* path);
 bool is_file(char* path);
 bool is_dir(char* path);
 
-
+/* Time */
+u_long timeval_to_msec(struct timeval val);
 
 
 #endif

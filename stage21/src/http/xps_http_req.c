@@ -73,15 +73,15 @@ int http_process_request_line(xps_http_req_t *http_req, xps_buffer_t *buff) {
     free(port_str);
   }
 
-  printf("Request Line: %s\n", http_req->request_line);
-  printf("Method: %s\n", http_req->method);
-  printf("URI: %s\n", http_req->uri);
-  printf("Schema: %s\n", http_req->schema);
-  printf("Host: %s\n", http_req->host);
-  printf("Path: %s\n", http_req->path);
-  printf("Pathname: %s\n", http_req->pathname);
-  printf("Port: %d\n", http_req->port);
-  printf("Version: %s\n", http_req->http_version);
+  // printf("Request Line: %s\n", http_req->request_line);
+  // printf("Method: %s\n", http_req->method);
+  // printf("URI: %s\n", http_req->uri);
+  // printf("Schema: %s\n", http_req->schema);
+  // printf("Host: %s\n", http_req->host);
+  // printf("Path: %s\n", http_req->path);
+  // printf("Pathname: %s\n", http_req->pathname);
+  // printf("Port: %d\n", http_req->port);
+  // printf("Version: %s\n", http_req->http_version);
 
   return OK;
 }
@@ -114,11 +114,11 @@ int http_process_headers(xps_http_req_t *http_req, xps_buffer_t *buff) {
         continue;
     }
 
-    printf("HEADERS\n");
-    for (int i = 0; i < http_req->headers.length; i++) {
-      xps_keyval_t *header = http_req->headers.data[i];
-      printf("%s: %s\n", header->key, header->val);
-    }
+    // printf("HEADERS\n");
+    // for (int i = 0; i < http_req->headers.length; i++) {
+    //   xps_keyval_t *header = http_req->headers.data[i];
+    //   printf("%s: %s\n", header->key, header->val);
+    // }
 
     return OK;
   }

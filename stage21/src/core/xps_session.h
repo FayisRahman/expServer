@@ -26,6 +26,7 @@ struct xps_session_s {
   xps_http_req_t *http_req;
 
   xps_config_lookup_t *lookup;
+  xps_timer_t *timer;
   
 };
     
