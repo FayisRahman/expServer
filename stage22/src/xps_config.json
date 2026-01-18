@@ -43,8 +43,6 @@
 					"req_path": "/",
 					"type": "reverse_proxy",
 					"upstreams": [
-						"localhost:3000",
-						"localhost:3001",
 						"localhost:3002"
 					],
 					"load_balancing": "round_robin",

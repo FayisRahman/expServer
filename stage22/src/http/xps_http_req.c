@@ -230,6 +230,8 @@ xps_http_req_t *xps_http_req_create(xps_core_t *core, xps_buffer_t *buff,
 
   logger(LOG_DEBUG, "xps_http_req_create()", "http_req created succesffully");
 
+  xps_metrics_set(core, M_REQ_CREATE, 1);
+
   return http_req;
 }
 
@@ -257,6 +259,8 @@ void xps_http_req_destroy(xps_core_t *core, xps_http_req_t *http_req) {
   vec_deinit(&(http_req->headers));
   /*free http_req*/
   free(http_req);
+
+  xps_metrics_set(core, M_REQ_DESTROY, 1);
 
   logger(LOG_DEBUG, "xps_http_req_destroy()", "destroyed http_req");
 }

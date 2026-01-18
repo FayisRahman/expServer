@@ -1,6 +1,8 @@
 #ifndef XPS_H
 #define XPS_H
 
+#define _GNU_SOURCE
+
 // Header files
 #include <arpa/inet.h>
 #include <assert.h>
@@ -20,20 +22,25 @@
 #include <unistd.h>
 #include <zlib.h>
 #include <time.h>
+#include <sys/resource.h>
 
 // 3rd party libraries
 #include "lib/parson/parson.h"
 #include "lib/vec/vec.h"
 
 // Constants
+#define SERVER_NAME "expServer"
+#define LOCALHOST "127.0.0.1"
 #define DEFAULT_BACKLOG 64
 #define MAX_EPOLL_EVENTS 32
+#define DEFAULT_NULLS_THRESH 32
 #define DEFAULT_BUFFER_SIZE 100000       // 100 KB
 #define DEFAULT_PIPE_BUFF_THRESH 1000000 // 1 MB
 #define DEFAULT_HTTP_REQ_TIMEOUT_MSEC 60000 // 60sec
-#define DEFAULT_NULLS_THRESH 32
-#define LOCALHOST "127.0.0.1"
-#define SERVER_NAME "expServer"
+#define DEFAULT_METRICS_UPDATE_MSEC 500     // 500 msec
+#define METRICS_HOST "0.0.0.0"
+#define METRICS_PORT 8004
+
 
 // Error constants
 #define OK 0            // Success
@@ -75,6 +82,7 @@ struct xps_config_lookup_s;
 struct xps_cliargs_s;
 struct xps_gzip_s;
 struct xps_timer_s;
+struct xps_metrics_s;
 
 // Struct typedefs
 typedef struct xps_core_s xps_core_t;
@@ -99,8 +107,14 @@ typedef struct xps_config_lookup_s xps_config_lookup_t;
 typedef struct xps_cliargs_s xps_cliargs_t;
 typedef struct xps_gzip_s xps_gzip_t;
 typedef struct xps_timer_s xps_timer_t;
+typedef struct xps_metrics_s xps_metrics_t;
+
 // Function typedefs
 typedef void (*xps_handler_t)(void *ptr);
+
+// Global Variables
+extern xps_core_t **cores;
+extern int n_cores;
 
 // xps headers
 #include "config/xps_config.h"
@@ -109,6 +123,7 @@ typedef void (*xps_handler_t)(void *ptr);
 #include "core/xps_pipe.h"
 #include "core/xps_session.h"
 #include "core/xps_timer.h"
+#include "core/xps_metrics.h"
 #include "disk/xps_directory.h"
 #include "disk/xps_file.h"
 #include "disk/xps_gzip.h"

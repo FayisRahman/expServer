@@ -120,12 +120,14 @@ void xps_listener_connection_handler(void *ptr) {
     if (conn_sock_fd < 0) {
       logger(LOG_ERROR, "xps_listener_connection_handler()", "accept() failed");
       perror("Error message");
+      xps_metrics_set(listener->core, M_CONN_ACCEPT_ERROR, 1);
       return;
     }
 
     if (make_socket_non_blocking(conn_sock_fd) != OK) {
       logger(LOG_ERROR, "xps_listener_create()", "make_socket_non_blocking() failed");
       close(conn_sock_fd);
+      xps_metrics_set(listener->core, M_CONN_ACCEPT_ERROR, 1);
       return;
     }
 
@@ -135,6 +137,7 @@ void xps_listener_connection_handler(void *ptr) {
     if (client == NULL) {
       logger(LOG_ERROR, "xps_listener_connection_handler()", "xps_connection_create() failed");
       close(conn_sock_fd);
+      xps_metrics_set(listener->core, M_CONN_ACCEPT_ERROR, 1);
       return;
     }
     client->listener = listener;
@@ -143,6 +146,7 @@ void xps_listener_connection_handler(void *ptr) {
     if (session == NULL) {
       logger(LOG_ERROR, "listener_connection_handler()", "xps_session_create() failed");
       xps_connection_destroy(client);
+      
       return;
     }
 

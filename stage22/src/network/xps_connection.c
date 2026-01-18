@@ -68,6 +68,10 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
 
   /* add connection to 'connections' list */
   vec_push(&(core->connections), connection);
+
+
+  xps_metrics_set(core, M_CONN_ACCEPT, 1);
+
   logger(LOG_DEBUG, "xps_connection_create()", "created connection");
   return connection;
 }
@@ -98,6 +102,9 @@ void xps_connection_destroy(xps_connection_t *connection) {
   xps_pipe_sink_destroy(connection->sink);
   /* free connection->remote_ip */
   free(connection->remote_ip);
+
+  xps_metrics_set(connection->core, M_CONN_CLOSE, 1);
+
   /* free connection instance */
   free(connection);
 
@@ -147,6 +154,10 @@ void connection_source_handler(void *ptr) {
   long read_n = recv(connection->sock_fd, buff->data, DEFAULT_BUFFER_SIZE, 0);
   buff->len = read_n;
 
+  // Set metrics
+  if (read_n > 0)
+    xps_metrics_set(connection->core, M_TRAFFIC_RECV_BYTES, read_n);
+
   // Socket would block
   if (read_n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
     xps_buffer_destroy(buff);
@@ -159,6 +170,7 @@ void connection_source_handler(void *ptr) {
     /*destroy buff*/
     xps_buffer_destroy(buff);
     logger(LOG_ERROR, "connection_source_handler()", "recv() failed");
+    xps_metrics_set(connection->core, M_CONN_ERROR, 1);
     connection_close(connection, false);
     return;
   }
@@ -177,6 +189,7 @@ void connection_source_handler(void *ptr) {
     /*destroy buff*/
     xps_buffer_destroy(buff);
     /*close connection*/
+    xps_metrics_set(connection->core, M_CONN_ERROR, 1);
     connection_close(connection, false);
     return;
   }
@@ -209,6 +222,10 @@ void connection_sink_handler(void *ptr) {
   // Write to socket
   int write_n = send(connection->sock_fd, buff->data, buff->len, MSG_NOSIGNAL);
 
+  // Set metrics
+  if (write_n > 0)
+    xps_metrics_set(connection->core, M_TRAFFIC_SEND_BYTES, write_n);
+
   /*destroy buff*/
   xps_buffer_destroy(buff);
 
@@ -222,6 +239,7 @@ void connection_sink_handler(void *ptr) {
   // Socket error
   if (write_n < 0) {
     logger(LOG_ERROR, "connection_sink_handler()", "send() failed");
+    xps_metrics_set(connection->core, M_CONN_ERROR, 1);
     /*close connection*/
     connection_close(connection, false);
     return;

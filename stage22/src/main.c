@@ -1,9 +1,10 @@
+#include "network/xps_listener.h"
 #include "xps.h"
 
-xps_core_t **cores;
 xps_cliargs_t *cliargs;
-int n_cores;
 int n_listeners;
+xps_core_t **cores;
+int n_cores = 0;
 
 void sigint_handler(int signum);
 int cores_create(xps_config_t *config);
@@ -65,8 +66,17 @@ int cores_create(xps_config_t *config) {
     }
   }
   /* Create listeners*/
-  xps_listener_t *listeners[config->_all_listeners.length];
+  xps_listener_t *listeners[config->_all_listeners.length + 1];
   n_listeners = 0;
+
+  //creating metrics listener TODO: Stage22
+  xps_listener_t *metrics_listener = xps_listener_create(METRICS_HOST, METRICS_PORT);
+  if (metrics_listener) {
+    logger(LOG_INFO, "cores_create()", "Metrics server listening on http://%s:%d", METRICS_HOST,
+           METRICS_PORT);
+    listeners[n_listeners] = metrics_listener;
+    n_listeners += 1;
+  }
   for (int i = 0; i < config->_all_listeners.length; i++) {
     xps_config_listener_t *conf = config->_all_listeners.data[i];
     xps_listener_t *listener = xps_listener_create(conf->host, conf->port);

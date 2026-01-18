@@ -5,16 +5,16 @@ xps_timer_t *xps_timer_create(xps_core_t *core, u_long duration_msec, void *ptr,
   assert(ptr != NULL);
   assert(cb != NULL);
 
-  // TODO: Allocate memory for timer using malloc()
+  //  Allocate memory for timer using malloc()
   xps_timer_t *timer = malloc(sizeof(xps_timer_t));
 
-  // TODO: Check if malloc failed, log error and return NULL
+  //  Check if malloc failed, log error and return NULL
   if(timer == NULL){
     logger(LOG_ERROR, "xps_timer_create()", "malloc() failed");
     return NULL;
   }
 
-  // TODO: initialize the values
+  //  initialize the values
   timer->core = core;
   timer->expiry_time_msec = core->curr_time_msec + duration_msec;
   timer->ptr = ptr;
@@ -29,7 +29,7 @@ xps_timer_t *xps_timer_create(xps_core_t *core, u_long duration_msec, void *ptr,
 void xps_timer_destroy(xps_timer_t *timer) {
   assert(timer != NULL);
 
-  // TODO: Find timer in core->timers and set to NULL
+  //  Find timer in core->timers and set to NULL
   // HINT: Loop through timer->core->timers.data[i]
   //       If match found, set data[i] = NULL
   //       Increment timer->core->n_null_timers
@@ -52,7 +52,7 @@ void xps_timer_update(xps_timer_t *timer, u_long duration_msec) {
   assert(timer != NULL);
   assert(duration_msec >= 0);
   
-  // TODO: Reset expiry time to current time + duration
+  //  Reset expiry time to current time + duration
   // HINT: timer->expiry_time_msec = timer->core->curr_time_msec + duration_msec
   timer->expiry_time_msec = timer->core->curr_time_msec + duration_msec;
   

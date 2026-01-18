@@ -24,6 +24,8 @@ struct xps_session_s {
   xps_buffer_t *from_client_buff;
 
   xps_http_req_t *http_req;
+  u_long req_create_time_msec;
+  long res_time;
 
   xps_config_lookup_t *lookup;
   xps_timer_t *timer;

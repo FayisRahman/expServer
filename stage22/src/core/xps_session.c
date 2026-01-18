@@ -1,4 +1,5 @@
 #include "xps_session.h"
+#include "xps_metrics.h"
 
 void client_source_handler(void *ptr);
 void client_source_close_handler(void *ptr);
@@ -15,7 +16,7 @@ void set_to_client_buff(xps_session_t *session, xps_buffer_t *buff);
 void set_from_client_buff(xps_session_t *session, xps_buffer_t *buff);
 void session_check_destroy(xps_session_t *session);
 void session_process_request(xps_session_t *session);
-void session_timer_handler(void *ptr); //TODO: stage21
+void session_timer_handler(void *ptr); 
 
 // custom function
 void session_destroy_pipes(xps_session_t *session);
@@ -94,6 +95,9 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
   session->upstream_sink->ready = true;
   session->file_sink->ready = true;
 
+  session->req_create_time_msec = -1;
+  session->res_time = -1;
+
   // Add to 'sessions' list of core
   vec_push(&(core->sessions), session);
 
@@ -128,6 +132,12 @@ void client_source_handler(void *ptr) {
     return;
   }
   xps_buffer_destroy(session->to_client_buff);
+
+  if(session->res_time == -1 && session->req_create_time_msec != -1){
+    u_long res_time = session->core->curr_time_msec - session->req_create_time_msec;
+    session->res_time = res_time;
+    xps_metrics_set(session->core, M_RES_TIME, res_time);
+  }
 
   xps_timer_update(session->timer, DEFAULT_HTTP_REQ_TIMEOUT_MSEC);
 
@@ -477,6 +487,7 @@ void session_process_request(xps_session_t *session) {
   }
 
   if (lookup->type == REQ_FILE_SERVE) {
+    xps_metrics_set(session->core, M_REQ_FILE_SERVE, 1);
 
     if (lookup->dir_path) {
       xps_buffer_t *dir_html =
@@ -574,6 +585,7 @@ void session_process_request(xps_session_t *session) {
       }
     }
   } else if (lookup->type == REQ_REVERSE_PROXY) {
+    xps_metrics_set(session->core, M_REQ_REVERSE_PROXY, 1);
 
     char host[128];
     u_int port = 0;
@@ -597,13 +609,28 @@ void session_process_request(xps_session_t *session) {
     }
 
   } else if (lookup->type == REQ_REDIRECT) {
+    xps_metrics_set(session->core, M_REQ_REDIRECT, 1);
     xps_http_res_t *http_res = xps_http_res_create(session->core, lookup->http_status_code);
     xps_http_set_header(&http_res->headers, "Location", lookup->redirect_url);
     xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
     set_to_client_buff(session, http_res_buff);
     xps_http_res_destroy(http_res);
     return;
-  } else {
+  } else if(lookup->type == REQ_METRICS){ //METRICS TODO: STAGE22
+    if(strcmp(session->http_req->pathname, "/api") == 0){
+      xps_http_res_t *http_res = xps_http_res_create(session->core, HTTP_OK);
+
+      xps_buffer_t *metrics_json = xps_metrics_get_json(session->core->metrics);
+      xps_http_res_set_body(http_res, metrics_json);
+
+      xps_http_set_header(&(http_res->headers), "Content-Type", "application/json");
+
+      xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
+
+      set_to_client_buff(session, http_res_buff);
+      xps_http_res_destroy(http_res);
+    }
+  }else {
     logger(LOG_ERROR, "session_process_request()", "invalid lookup type");
     xps_session_destroy(session);
     return;
@@ -616,5 +643,6 @@ void session_timer_handler(void *ptr){
   xps_session_t *session = ptr;
 
   logger(LOG_WARNING, "session_timer_handler()", "http req timeout");
+  xps_metrics_set(session->core, M_CONN_TIMEOUT, 1);  
   xps_session_destroy(session);
 }

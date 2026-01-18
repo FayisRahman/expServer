@@ -324,7 +324,7 @@ void xps_loop_run(xps_loop_t *loop) {
   while (1) {
     logger(LOG_DEBUG, "xps_loop_run()", "loop top");
 
-		//Update current time before handling timers //TODO: stage 21
+		//Update current time before handling timers 
 		xps_core_update_time(loop->core); 
 
 		// Handle timers
@@ -333,13 +333,13 @@ void xps_loop_run(xps_loop_t *loop) {
     // Handle pipes
     bool has_ready_pipes = handle_pipes(loop);
 
-    int timeout = has_ready_pipes ? 0 : timeout_msec; //TODO: stage 21
+    int timeout = has_ready_pipes ? 0 : timeout_msec; 
 
     logger(LOG_DEBUG, "xps_loop_run()", "epoll waiting");
     int n_events = epoll_wait(loop->epoll_fd, loop->epoll_events, MAX_EPOLL_EVENTS, timeout);
     logger(LOG_DEBUG, "xps_loop_run()", "epoll wait over");
 
-		//update time after epoll_wait() //TODO: stage 21
+		//update time after epoll_wait() 
 		xps_core_update_time(loop->core);
 
     if (n_events < 0)
@@ -354,7 +354,7 @@ void xps_loop_run(xps_loop_t *loop) {
   }
 }
 
-//TODO: stage 21
+
 long handle_timers(xps_loop_t *loop) {
   assert(loop != NULL);
 

@@ -132,6 +132,22 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
   assert(http_req != NULL);
   assert(client != NULL);
 
+  // CASE : METRICS  TODO: STAGE22
+  if(client->listener->port == METRICS_PORT){
+    xps_config_lookup_t *lookup = malloc(sizeof(xps_config_lookup_t));
+    if (lookup == NULL) {
+      logger(LOG_ERROR, "xps_config_lookup()", "malloc() failed for 'lookup'");
+      return NULL;
+    }
+    lookup->type = REQ_METRICS;
+    lookup->file_path = NULL;
+    lookup->dir_path = NULL;
+
+    *error = OK;
+    return lookup;
+  }
+                                    
+
   *error = E_FAIL;
   /*get host,keep_alive(connection),accept encoding,pathname from http_req*/
 
@@ -299,13 +315,12 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     logger(LOG_DEBUG, "xps_config_file_lookup()", "requested file path: %s", lookup->file_path);
 
   } else if (lookup->type == REQ_REVERSE_PROXY) {
-    // TODO: stage20 Load Balacning
+    
     
       if (strcmp(route->load_balancing, "round_robin") == 0) {
 
         int index = route->_round_robin_counter % route->upstreams.length;
         route->_round_robin_counter++;
-        printf("current upstream index: %d", index);
         lookup->upstream = route->upstreams.data[index];
       } else if (strcmp(route->load_balancing, "ip_hash") == 0) {
         u_int ip;
@@ -401,7 +416,10 @@ void parse_listener(JSON_Object *listener_object, xps_config_listener_t *listene
   if (listener->port == 0) {
     logger(LOG_ERROR, "parse_listener()", "port is required");
     return;
-  }
+  }else if (listener->port == METRICS_PORT) { //TODO: stage22
+    logger(LOG_ERROR, "parse_listener()", "cannot use METRICS_PORT");
+    return;
+  } 
 }
 
 void parse_route(JSON_Object *route_object, xps_config_route_t *route) {
