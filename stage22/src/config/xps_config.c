@@ -214,6 +214,8 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     return NULL;
   }
 
+  printf("route %s",route->req_path);
+
   /* Init values of lookup*/
   xps_config_lookup_t *lookup = malloc(sizeof(xps_config_lookup_t));
   if (lookup == NULL) {

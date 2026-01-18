@@ -46,17 +46,17 @@ int core_create(xps_config_t *config) {
 
   // Create cores
   core = xps_core_create(config);
-  if (core == NULL)  {
+  if (core == NULL) {
     logger(LOG_ERROR, "cores_create()", "xps_core_create() failed");
     core_destroy();
     return E_FAIL;
   }
-  
+
   /* Create listeners*/
   xps_listener_t *listeners[config->_all_listeners.length + 1];
   n_listeners = 0;
 
-  //creating metrics listener TODO: Stage22
+  // creating metrics listener TODO: Stage22
   xps_listener_t *metrics_listener = xps_listener_create(METRICS_HOST, METRICS_PORT);
   if (metrics_listener) {
     logger(LOG_INFO, "cores_create()", "Metrics server listening on http://%s:%d", METRICS_HOST,
@@ -69,8 +69,8 @@ int core_create(xps_config_t *config) {
     xps_config_listener_t *conf = config->_all_listeners.data[i];
     xps_listener_t *listener = xps_listener_create(conf->host, conf->port);
     if (listener) {
-      logger(LOG_INFO, "cores_create()", "Server listening on http://%s:%d",
-             conf->host, conf->port);
+      logger(LOG_INFO, "cores_create()", "Server listening on http://%s:%d", conf->host,
+             conf->port);
       listeners[n_listeners] = listener;
       n_listeners++;
     } else {
@@ -82,14 +82,14 @@ int core_create(xps_config_t *config) {
   for (int j = 0; j < n_listeners; j++) {
     xps_listener_t *listener = listeners[j];
     /*Attach listener to loop*/
-    if (xps_loop_attach(core->loop, listener->sock_fd,
-                        EPOLLIN | EPOLLET, listener,
+    if (xps_loop_attach(core->loop, listener->sock_fd, EPOLLIN | EPOLLET, listener,
                         xps_listener_connection_handler, NULL, NULL) != OK) {
       logger(LOG_ERROR, "cores_create()", "xps_loop_attach() failed");
       free(listener);
       continue;
     }
     /*Add listener to 'listeners' list of core*/
+    listener->core = core;
     vec_push(&(core->listeners), listener);
   }
 

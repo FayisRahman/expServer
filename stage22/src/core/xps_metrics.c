@@ -1,6 +1,6 @@
 #include "xps_metrics.h"
 
-xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent);
+xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float worker_cpu_percent);
 float get_sys_cpu_percent();
 void get_sys_mem_usage(u_long *total_mem_bytes, u_long *used_mem_bytes);
 
@@ -147,7 +147,7 @@ void xps_metrics_set(xps_core_t *core, xps_metric_type_t type, long val) {
   }
 }
 
-xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent) {
+xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float worker_cpu_percent) {
 
   assert(metrics != NULL);
 
@@ -159,7 +159,7 @@ xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent)
 
   // setup array of workers cpu percent values
   char workers_cpu_percent_str[32];
-  snprintf(workers_cpu_percent_str, sizeof(workers_cpu_percent_str), "[%f]", workers_cpu_percent);
+  snprintf(workers_cpu_percent_str, sizeof(workers_cpu_percent_str), "[%f]", worker_cpu_percent);
 
   snprintf(
     buff->data, buff->size,
@@ -173,7 +173,7 @@ xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent)
     "\"sys_ram_usage_bytes\": %lu,"
     "\"sys_ram_total_bytes\": %lu,"
 
-    "\"workers_cpu_usage_percent\": %s,"
+    "\"workers_cpu_usage_percent\": \"%f\","
     "\"workers_ram_usage_bytes\": %lu,"
 
     "\"conn_current\": %lu,"
@@ -200,7 +200,7 @@ xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent)
     "}",
     metrics->server_name, metrics->pid, metrics->workers, metrics->uptime_msec,
     metrics->sys_cpu_usage_percent, metrics->sys_ram_usage_bytes, metrics->sys_ram_total_bytes,
-    workers_cpu_percent_str, metrics->worker_ram_usage_bytes, metrics->conn_current,
+    worker_cpu_percent, metrics->worker_ram_usage_bytes, metrics->conn_current,
     metrics->conn_accepted, metrics->conn_error, metrics->conn_timeout, metrics->conn_accept_error,
     metrics->req_current, metrics->req_total, metrics->req_file_serve, metrics->req_reverse_proxy,
     metrics->req_redirect, metrics->res_avg_res_time_msec, metrics->res_peak_res_time_msec,

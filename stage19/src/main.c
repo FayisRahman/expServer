@@ -80,6 +80,7 @@ int core_create(xps_config_t *config) {
       free(listener);
       continue;
     }
+    listener->core = core;
     /*Add listener to 'listeners' list of core*/
     vec_push(&(core->listeners), listener);
   }
