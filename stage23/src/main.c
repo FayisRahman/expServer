@@ -1,14 +1,21 @@
 #include "network/xps_listener.h"
 #include "xps.h"
+#include <assert.h>
 
 xps_cliargs_t *cliargs;
 int n_listeners;
 xps_core_t **cores;
 int n_cores = 0;
+pthread_t *thread_ids;
+int n_threads;
+xps_config_t *config;
 
 void sigint_handler(int signum);
 int cores_create(xps_config_t *config);
 void cores_destroy();
+int threads_create(xps_core_t **cores, int n_cores);
+void threads_destroy();
+void *thread_start(void *arg);
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, sigint_handler);           // for handling ctrl+c
@@ -18,7 +25,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
   /*create config, create cores, start cores*/
-  xps_config_t *config = xps_config_create(cliargs->config_path);
+  config = xps_config_create(cliargs->config_path);
   if (config == NULL) {
     logger(LOG_ERROR, "main()", "failed to parse config file");
     exit(EXIT_FAILURE);
@@ -28,9 +35,9 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  // Start all cores' event loops
-  for (int i = 0; i < n_cores; i++) {
-    xps_core_start(cores[i]);
+  if (threads_create(cores, n_cores) != OK) {
+    logger(LOG_ERROR, "main()", "threads_create() failed");
+    exit(EXIT_FAILURE);
   }
 
   return EXIT_SUCCESS;
@@ -39,7 +46,10 @@ int main(int argc, char *argv[]) {
 void sigint_handler(int signum) {
   logger(LOG_WARNING, "sigint_handler()", "SIGINT received");
 
+  threads_destroy();
   cores_destroy();
+  xps_config_destroy(config);
+  xps_cliargs_destroy(cliargs);
 
   exit(EXIT_SUCCESS);
 }
@@ -140,4 +150,56 @@ void cores_destroy() {
   }
   free(cores);
   logger(LOG_DEBUG, "cores_destroy()", "destroyed cores");
+}
+
+int threads_create(xps_core_t **cores, int n_cores){
+  assert(cores != NULL);
+
+  thread_ids = malloc(sizeof(pthread_t) * n_cores);
+  if(thread_ids == NULL){
+    logger(LOG_ERROR, "theads_create()", "malloc() failed for 'thread_ids'");
+    return E_FAIL;
+  }
+
+  for(int i = 0; i < n_cores; i++){
+    xps_core_t *curr_core = cores[i];
+    int err = pthread_create(&(thread_ids[i]),NULL, thread_start, (void*) curr_core);
+    if (err != 0) {
+      logger(LOG_ERROR, "threads_create()", "pthread_create() failed");
+      continue;
+    }
+    n_threads += 1;
+    logger(LOG_DEBUG, "threads_create()", "created thread %d", i);
+  }
+
+  for(int i=0;i < n_cores; i++ ){
+    if(pthread_join(thread_ids[i],NULL) != 0){
+      logger(LOG_ERROR, "threads_create()", "pthread_join() failed");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  logger(LOG_DEBUG, "threads_create()", "created threads");
+
+  return OK;
+
+}
+
+void threads_destroy() {
+  for (int i = 0; i < n_threads; i++) {
+    int err = pthread_cancel(thread_ids[i]);
+    if (err != 0) {
+      logger(LOG_ERROR, "threads_destroy()", "pthread_cancel() failed");
+      perror("Error message");
+      exit(EXIT_FAILURE);
+    }
+  }
+  free(thread_ids);
+
+  logger(LOG_DEBUG, "threads_destroy()", "destroyed threads");
+}
+
+void *thread_start(void *arg) {
+  xps_core_t *core = arg;
+  xps_core_start(core);
 }

@@ -120,6 +120,7 @@ void xps_config_destroy(xps_config_t *config) {
     free(server);
   }
   vec_deinit(&(config->servers));
+  vec_deinit(&(config->_all_listeners));
 
   json_value_free(config->_config_json);
   free(config);
@@ -133,7 +134,7 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
   assert(client != NULL);
 
   // CASE : METRICS  TODO: STAGE22
-  if(client->listener->port == METRICS_PORT){
+  if (client->listener->port == METRICS_PORT) {
     xps_config_lookup_t *lookup = malloc(sizeof(xps_config_lookup_t));
     if (lookup == NULL) {
       logger(LOG_ERROR, "xps_config_lookup()", "malloc() failed for 'lookup'");
@@ -146,7 +147,6 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     *error = OK;
     return lookup;
   }
-                                    
 
   *error = E_FAIL;
   /*get host,keep_alive(connection),accept encoding,pathname from http_req*/
@@ -315,22 +315,20 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     logger(LOG_DEBUG, "xps_config_file_lookup()", "requested file path: %s", lookup->file_path);
 
   } else if (lookup->type == REQ_REVERSE_PROXY) {
-    
-    
-      if (strcmp(route->load_balancing, "round_robin") == 0) {
 
-        int index = route->_round_robin_counter % route->upstreams.length;
-        route->_round_robin_counter++;
-        lookup->upstream = route->upstreams.data[index];
-      } else if (strcmp(route->load_balancing, "ip_hash") == 0) {
-        u_int ip;
-        inet_pton(AF_INET, client->remote_ip, &ip);
-        int index = ip % route->upstreams.length;
-        lookup->upstream = route->upstreams.data[index];
-      } else {
-        logger(LOG_ERROR, "xps_config_lookup()", "invalid load balancing strategy");
-      }
-    
+    if (strcmp(route->load_balancing, "round_robin") == 0) {
+
+      int index = route->_round_robin_counter % route->upstreams.length;
+      route->_round_robin_counter++;
+      lookup->upstream = route->upstreams.data[index];
+    } else if (strcmp(route->load_balancing, "ip_hash") == 0) {
+      u_int ip;
+      inet_pton(AF_INET, client->remote_ip, &ip);
+      int index = ip % route->upstreams.length;
+      lookup->upstream = route->upstreams.data[index];
+    } else {
+      logger(LOG_ERROR, "xps_config_lookup()", "invalid load balancing strategy");
+    }
   }
   *error = OK;
   return lookup;
@@ -416,10 +414,10 @@ void parse_listener(JSON_Object *listener_object, xps_config_listener_t *listene
   if (listener->port == 0) {
     logger(LOG_ERROR, "parse_listener()", "port is required");
     return;
-  }else if (listener->port == METRICS_PORT) { //TODO: stage22
+  } else if (listener->port == METRICS_PORT) { // TODO: stage22
     logger(LOG_ERROR, "parse_listener()", "cannot use METRICS_PORT");
     return;
-  } 
+  }
 }
 
 void parse_route(JSON_Object *route_object, xps_config_route_t *route) {

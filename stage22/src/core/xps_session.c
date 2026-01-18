@@ -646,10 +646,7 @@ void session_process_request(xps_session_t *session) {
     }
   } else { // TODO: Newly added can be added for better response time
     logger(LOG_ERROR, "session_process_request()", "invalid lookup type");
-    xps_http_res_t *http_res = xps_http_res_create(session->core, HTTP_NOT_IMPLEMENTED);
-    xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
-    set_to_client_buff(session, http_res_buff);
-    xps_http_res_destroy(http_res);
+    xps_session_destroy(session);
     return;
   }
 }

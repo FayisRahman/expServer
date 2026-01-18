@@ -583,6 +583,11 @@ void session_process_request(xps_session_t *session) {
         xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source,
                         session->file_sink);
       }
+    }else {
+      xps_http_res_t *http_res = xps_http_res_create(session->core, HTTP_NOT_FOUND);
+      xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
+      set_to_client_buff(session, http_res_buff);
+      xps_http_res_destroy(http_res);
     }
   } else if (lookup->type == REQ_REVERSE_PROXY) {
     xps_metrics_set(session->core, M_REQ_REVERSE_PROXY, 1);
@@ -627,6 +632,11 @@ void session_process_request(xps_session_t *session) {
 
       xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
 
+      set_to_client_buff(session, http_res_buff);
+      xps_http_res_destroy(http_res);
+    }else {
+      xps_http_res_t *http_res = xps_http_res_create(session->core, HTTP_NOT_FOUND);
+      xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
       set_to_client_buff(session, http_res_buff);
       xps_http_res_destroy(http_res);
     }

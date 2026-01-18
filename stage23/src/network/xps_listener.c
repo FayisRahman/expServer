@@ -116,6 +116,7 @@ void xps_listener_connection_handler(void *ptr) {
 
     if (conn_sock_fd < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
       break;
+    
 
     if (conn_sock_fd < 0) {
       logger(LOG_ERROR, "xps_listener_connection_handler()", "accept() failed");
@@ -130,6 +131,8 @@ void xps_listener_connection_handler(void *ptr) {
       xps_metrics_set(listener->core, M_CONN_ACCEPT_ERROR, 1);
       return;
     }
+
+   
 
     // Creating connection instance
     xps_connection_t *client =

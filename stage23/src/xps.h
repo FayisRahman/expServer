@@ -23,6 +23,7 @@
 #include <zlib.h>
 #include <time.h>
 #include <sys/resource.h>
+#include <pthread.h>
 
 // 3rd party libraries
 #include "lib/parson/parson.h"
