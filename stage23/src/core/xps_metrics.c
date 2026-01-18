@@ -1,6 +1,8 @@
 #include "xps_metrics.h"
+#include "xps_timer.h"
+#include <sys/resource.h>
 
-xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent);
+xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent[]);
 float get_sys_cpu_percent();
 void get_sys_mem_usage(u_long *total_mem_bytes, u_long *used_mem_bytes);
 
@@ -76,7 +78,52 @@ xps_buffer_t *xps_metrics_get_json(xps_metrics_t *metrics) {
   get_sys_mem_usage(&metrics->sys_ram_total_bytes, &metrics->sys_ram_usage_bytes);
   metrics->sys_cpu_usage_percent = get_sys_cpu_percent();
 
-  return metrics_to_json(metrics, metrics->worker_cpu_usage_percent);
+  // calculate cumulative metrics
+  xps_metrics_t cumulative;
+  memset(&cumulative, 0, sizeof(cumulative));
+
+  cumulative.server_name = metrics->server_name;
+  cumulative.pid = metrics->pid;
+  cumulative.workers = metrics->workers;
+  cumulative.sys_ram_total_bytes = metrics->sys_ram_total_bytes;
+  cumulative.sys_ram_usage_bytes = metrics->sys_ram_usage_bytes;
+  cumulative.sys_cpu_usage_percent = metrics->sys_cpu_usage_percent;
+
+  float workers_cpu_percent[n_cores];
+
+  // will be needing to remove this loop and keep it for the next stage
+  for (int i = 0; i < n_cores; i++) {
+    xps_metrics_t *curr = cores[i]->metrics;
+
+    workers_cpu_percent[i] =
+      curr->worker_cpu_usage_percent; // for stage22 manage this appropriately...(make it for a
+                                      // single core)
+    cumulative.worker_ram_usage_bytes += curr->worker_ram_usage_bytes;
+
+    cumulative.conn_current += curr->conn_current;
+    cumulative.conn_accepted += curr->conn_accepted;
+    cumulative.conn_error += curr->conn_error;
+    cumulative.conn_timeout += curr->conn_timeout;
+    cumulative.conn_accept_error += curr->conn_accept_error;
+
+    cumulative.req_current += curr->req_current;
+    cumulative.req_total += curr->req_total;
+    cumulative.req_file_serve += curr->req_file_serve;
+    cumulative.req_reverse_proxy += curr->req_reverse_proxy;
+    cumulative.req_redirect += curr->req_redirect;
+
+    cumulative.res_avg_res_time_msec += curr->res_avg_res_time_msec;
+    cumulative.res_peak_res_time_msec += curr->res_peak_res_time_msec;
+    cumulative.res_code_2xx += curr->res_code_2xx;
+    cumulative.res_code_3xx += curr->res_code_3xx;
+    cumulative.res_code_4xx += curr->res_code_4xx;
+    cumulative.res_code_5xx += curr->res_code_5xx;
+
+    cumulative.traffic_total_send_bytes += curr->traffic_total_send_bytes;
+    cumulative.traffic_total_recv_bytes += curr->traffic_total_recv_bytes;
+  }
+
+  return metrics_to_json(&cumulative, workers_cpu_percent);
 }
 
 void xps_metrics_set(xps_core_t *core, xps_metric_type_t type, long val) {
@@ -147,7 +194,7 @@ void xps_metrics_set(xps_core_t *core, xps_metric_type_t type, long val) {
   }
 }
 
-xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent) {
+xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent[]) {
 
   assert(metrics != NULL);
 
@@ -158,8 +205,16 @@ xps_buffer_t *metrics_to_json(xps_metrics_t *metrics, float workers_cpu_percent)
   }
 
   // setup array of workers cpu percent values
-  char workers_cpu_percent_str[32];
-  snprintf(workers_cpu_percent_str, sizeof(workers_cpu_percent_str), "[%f]", workers_cpu_percent);
+  char workers_cpu_percent_str[n_cores * 20];
+  memset(workers_cpu_percent_str, 0, sizeof(workers_cpu_percent_str));
+  strncat(workers_cpu_percent_str, "[", sizeof(workers_cpu_percent_str));
+
+  for (int i = 0; i < n_cores; i++) {
+    char temp[20];
+    snprintf(temp, strlen(temp), "%f%s", workers_cpu_percent[i], i == n_cores - 1 ? "" : ",");
+    strncat(workers_cpu_percent_str, temp, sizeof(workers_cpu_percent_str));
+  }
+  strncat(workers_cpu_percent_str, "]", sizeof(workers_cpu_percent_str));
 
   snprintf(
     buff->data, buff->size,
@@ -243,21 +298,21 @@ float get_sys_cpu_percent() {
   // Calculate CPU idle time and total time
   idle_diff = idle - idle_prev;
   total_diff = total - total_prev;
-
-  // calculate CPU usage percentage
+  
+  //calculate CPU usage percentage
   usage = 100.0 * (total_diff - idle_diff) / total_diff;
 
-  // update previous values for next iteration
+  //update previous values for next iteration
   idle_prev = idle;
   total_prev = total;
 
-  // close the file
+  //close the file
   fclose(fp);
 
   return usage;
 }
 
-void get_sys_mem_usage(u_long *total_mem_bytes, u_long *used_mem_bytes) {
+void get_sys_mem_usage(u_long *total_mem_bytes, u_long *used_mem_bytes){
   *total_mem_bytes = 0;
   *used_mem_bytes = 0;
 
@@ -270,29 +325,29 @@ void get_sys_mem_usage(u_long *total_mem_bytes, u_long *used_mem_bytes) {
 
   char line[200];
   u_long mem_total = 0, mem_free = 0, buffers = 0, cached = 0;
-  while (fgets(line, sizeof(line), file)) {
-    if (strncmp(line, "MemTotal:", 9) == 0) {
+  while(fgets(line, sizeof(line), file)){
+    if(strncmp(line, "MemTotal:", 9) == 0){
       const char *ptr = line + 9;
       // Skip non-digit characters
       while (*ptr < '0' || *ptr > '9')
         ptr++;
       // Convert digits to unsigned long
       mem_total = strtoul(ptr, NULL, 10);
-    } else if (strncmp(line, "MemFree:", 8) == 0) {
+    }else if(strncmp(line, "MemFree:", 8) == 0){
       const char *ptr = line + 7;
       // Skip non-digit characters
       while (*ptr < '0' || *ptr > '9')
         ptr++;
       // Convert digits to unsigned long
       mem_free = strtoul(ptr, NULL, 10);
-    } else if (strncmp(line, "Buffers:", 8) == 0) {
+    }else if(strncmp(line, "Buffers:", 8) == 0){
       const char *ptr = line + 8;
       // Skip non-digit characters
       while (*ptr < '0' || *ptr > '9')
         ptr++;
       // Convert digits to unsigned long
       buffers = strtoul(ptr, NULL, 10);
-    } else if (strncmp(line, "Cached:", 7)) {
+    }else if(strncmp(line, "Cached:", 7)){
       const char *ptr = line + 7;
       // Skip non-digit characters
       while (*ptr < '0' || *ptr > '9')
@@ -305,24 +360,24 @@ void get_sys_mem_usage(u_long *total_mem_bytes, u_long *used_mem_bytes) {
   fclose(file);
   *total_mem_bytes = mem_total * 1024;
   *used_mem_bytes = (mem_total - mem_free - buffers - cached) * 1024;
+
 }
 
-void xps_metrics_update_handler(void *ptr) {
+void xps_metrics_update_handler(void *ptr){
   assert(ptr != NULL);
   xps_core_t *core = ptr;
   xps_metrics_t *metrics = core->metrics;
 
-  // Server resource usage
+  //Server resource usage
   struct rusage usage;
-  if (getrusage(RUSAGE_THREAD, &usage) != 0) {
+  if(getrusage(RUSAGE_THREAD, &usage) != 0){
     logger(LOG_ERROR, "xps_metrics_get_json()", "getrusage() failed");
     perror("Error message");
     metrics->worker_cpu_usage_percent = 0;
     metrics->worker_ram_usage_bytes = 0;
-  } else {
-    // Calculate worker CPU Usage percent
-    u_long curr_worker_cpu_time_msec =
-      timeval_to_msec(usage.ru_utime) + timeval_to_msec(usage.ru_stime);
+  }else{
+    //Calculate worker CPU Usage percent
+    u_long curr_worker_cpu_time_msec = timeval_to_msec(usage.ru_utime) + timeval_to_msec(usage.ru_stime);
 
     u_long diff_cpu_time = curr_worker_cpu_time_msec - metrics->_last_worker_cpu_time_msec;
     u_long uptime_msec = core->curr_time_msec - core->init_time_msec;
@@ -337,4 +392,5 @@ void xps_metrics_update_handler(void *ptr) {
   }
 
   xps_timer_update(core->metrics_update_timer, DEFAULT_METRICS_UPDATE_MSEC);
+
 }

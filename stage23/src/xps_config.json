@@ -1,0 +1,72 @@
+{
+	"server_name": "eXpServer",
+	"workers": 4,
+	"servers": [
+		{
+			"listeners": [
+				{
+					"host": "0.0.0.0",
+					"port": 8001
+				}
+			],
+			"routes": [
+				{
+					"req_path": "/",
+					"type": "file_serve",
+					"dir_path": "../../",
+					"index": [
+						"index.html"
+					],
+					"gzip_enable": true,
+					"gzip_level": 8,
+					"gzip_mime_types": [
+						"text/x-c"
+					]
+				},
+				{
+					"req_path": "/hello",
+					"type": "redirect",
+					"http_status_code": 302,
+					"redirect_url": "http://localhost:8002/"
+				}
+			]
+		},
+		{
+			"listeners": [
+				{
+					"host": "0.0.0.0",
+					"port": 8002
+				}
+			],
+			"routes": [
+				{
+					"req_path": "/",
+					"type": "reverse_proxy",
+					"upstreams": [
+						"localhost:3002"
+					],
+					"load_balancing": "round_robin",
+					"ip_whitelist": [
+						"127.0.0.1"
+					]
+				}
+			]
+		},
+		{
+			"listeners": [
+				{
+					"host": "0.0.0.0",
+					"port": 8003
+				}
+			],
+			"routes": [
+				{
+					"req_path": "/",
+					"type": "redirect",
+					"http_status_code": 302,
+					"redirect_url": "https://expserver.github.io"
+				}
+			]
+		}
+	]
+}

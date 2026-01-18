@@ -113,7 +113,8 @@ typedef struct xps_metrics_s xps_metrics_t;
 typedef void (*xps_handler_t)(void *ptr);
 
 // Global Variables
-
+extern xps_core_t **cores;
+extern int n_cores;
 
 // xps headers
 #include "config/xps_config.h"
