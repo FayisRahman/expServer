@@ -81,7 +81,7 @@ xps_buffer_t *xps_metrics_get_json(xps_metrics_t *metrics) {
 
 void xps_metrics_set(xps_core_t *core, xps_metric_type_t type, long val) {
   assert(core != NULL);
-  assert(val > 0);
+  assert(val >= 0);
 
   switch (type) {
     case M_CONN_ACCEPT:

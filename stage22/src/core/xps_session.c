@@ -186,6 +186,7 @@ void client_sink_handler(void *ptr) {
       return;
     }
     session->http_req = http_req;
+    session->req_create_time_msec = session->core->curr_time_msec;
     /*serialize http_req into buffer http_req_buff*/
     xps_buffer_t *http_req_buff = xps_http_req_serialize(http_req);
     if (http_req_buff == NULL) {

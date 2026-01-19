@@ -16,7 +16,7 @@ void set_to_client_buff(xps_session_t *session, xps_buffer_t *buff);
 void set_from_client_buff(xps_session_t *session, xps_buffer_t *buff);
 void session_check_destroy(xps_session_t *session);
 void session_process_request(xps_session_t *session);
-void session_timer_handler(void *ptr); 
+void session_timer_handler(void *ptr);
 
 // custom function
 void session_destroy_pipes(xps_session_t *session);
@@ -49,7 +49,8 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
     return NULL;
   }
 
-  session->timer = xps_timer_create(core, DEFAULT_HTTP_REQ_TIMEOUT_MSEC, (void *)session, session_timer_handler);
+  session->timer =
+    xps_timer_create(core, DEFAULT_HTTP_REQ_TIMEOUT_MSEC, (void *)session, session_timer_handler);
   if (session->timer == NULL) {
     logger(LOG_ERROR, "xps_session_create()", "xps_timer_create() failed");
     free(session);
@@ -90,7 +91,7 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
   session->from_client_buff = NULL;
   session->http_req = NULL;
   session->lookup = NULL;
-  session->gzip = NULL;  
+  session->gzip = NULL;
   session->client_sink->ready = true;
   session->upstream_sink->ready = true;
   session->file_sink->ready = true;
@@ -133,7 +134,9 @@ void client_source_handler(void *ptr) {
   }
   xps_buffer_destroy(session->to_client_buff);
 
-  if(session->res_time == -1 && session->req_create_time_msec != -1){
+
+  if (session->res_time == -1 && session->req_create_time_msec != -1) {
+
     u_long res_time = session->core->curr_time_msec - session->req_create_time_msec;
     session->res_time = res_time;
     xps_metrics_set(session->core, M_RES_TIME, res_time);
@@ -185,6 +188,9 @@ void client_sink_handler(void *ptr) {
       return;
     }
     session->http_req = http_req;
+
+    session->req_create_time_msec = session->core->curr_time_msec;
+
     /*serialize http_req into buffer http_req_buff*/
     xps_buffer_t *http_req_buff = xps_http_req_serialize(http_req);
     if (http_req_buff == NULL) {
@@ -583,7 +589,7 @@ void session_process_request(xps_session_t *session) {
         xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source,
                         session->file_sink);
       }
-    }else {
+    } else {
       xps_http_res_t *http_res = xps_http_res_create(session->core, HTTP_NOT_FOUND);
       xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
       set_to_client_buff(session, http_res_buff);
@@ -621,8 +627,8 @@ void session_process_request(xps_session_t *session) {
     set_to_client_buff(session, http_res_buff);
     xps_http_res_destroy(http_res);
     return;
-  } else if(lookup->type == REQ_METRICS){ //METRICS TODO: STAGE22
-    if(strcmp(session->http_req->pathname, "/api") == 0){
+  } else if (lookup->type == REQ_METRICS) { // METRICS TODO: STAGE22
+    if (strcmp(session->http_req->pathname, "/api") == 0) {
       xps_http_res_t *http_res = xps_http_res_create(session->core, HTTP_OK);
 
       xps_buffer_t *metrics_json = xps_metrics_get_json(session->core->metrics);
@@ -634,25 +640,25 @@ void session_process_request(xps_session_t *session) {
 
       set_to_client_buff(session, http_res_buff);
       xps_http_res_destroy(http_res);
-    }else {
+    } else {
       xps_http_res_t *http_res = xps_http_res_create(session->core, HTTP_NOT_FOUND);
       xps_buffer_t *http_res_buff = xps_http_res_serialize(http_res);
       set_to_client_buff(session, http_res_buff);
       xps_http_res_destroy(http_res);
     }
-  }else {
+  } else {
     logger(LOG_ERROR, "session_process_request()", "invalid lookup type");
     xps_session_destroy(session);
     return;
   }
 }
 
-void session_timer_handler(void *ptr){
+void session_timer_handler(void *ptr) {
   assert(ptr != NULL);
 
   xps_session_t *session = ptr;
 
   logger(LOG_WARNING, "session_timer_handler()", "http req timeout");
-  xps_metrics_set(session->core, M_CONN_TIMEOUT, 1);  
+  xps_metrics_set(session->core, M_CONN_TIMEOUT, 1);
   xps_session_destroy(session);
 }

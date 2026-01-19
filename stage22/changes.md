@@ -40,6 +40,7 @@ This stage introduces a comprehensive metrics module to track server performance
     - `M_REQ_REVERSE_PROXY`: Reverse proxy requests.
     - `M_CONN_TIMEOUT`: Session timeouts.
 	- also added some request handling if unknown paths gets requested for (file_serve and metrics and rest of paths it will return appropriate 4xx status code if path is not found)
+  - also added session->req_create_time_msec = session->core->curr_time_msec in client_sink_handler after assigning session->http_req = http_req; this will set the avg and peak msec values
 
 ### `xps_http_req`
 - Integrated `xps_metrics_set` to track request lifecycle:

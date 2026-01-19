@@ -19,6 +19,21 @@ xps_core_t *xps_core_create(xps_config_t *config) {
     return NULL;
   }
 
+  // Init values
+  core->loop = loop;
+  core->config = config;
+  vec_init(&(core->listeners));
+  vec_init(&(core->connections));
+  vec_init(&(core->pipes));
+  vec_init(&(core->sessions));
+  core->n_null_listeners = 0;
+  core->n_null_connections = 0;
+  core->n_null_pipes = 0;
+  core->n_null_sessions = 0;
+  core->n_null_timers = 0;
+  core->init_time_msec = 0;
+  core->curr_time_msec = 0;
+
   // TODO: STAGE22
   xps_metrics_t *metrics = xps_metrics_create(core, config);
   if (metrics == NULL) {
@@ -42,21 +57,6 @@ xps_core_t *xps_core_create(xps_config_t *config) {
     free(core);
     return NULL;
   }
-
-  // Init values
-  core->loop = loop;
-  core->config = config;
-  vec_init(&(core->listeners));
-  vec_init(&(core->connections));
-  vec_init(&(core->pipes));
-  vec_init(&(core->sessions));
-  core->n_null_listeners = 0;
-  core->n_null_connections = 0;
-  core->n_null_pipes = 0;
-  core->n_null_sessions = 0;
-  core->n_null_timers = 0;
-  core->init_time_msec = 0;
-  core->curr_time_msec = 0;
 
   core->metrics = metrics;
   core->metrics_update_timer = metrics_update_timer;
@@ -116,8 +116,6 @@ void xps_core_destroy(xps_core_t *core) {
     }
   }
   vec_deinit(&(core->pipes));
-
-  
 
   /* destory loop attached to core */
   xps_loop_destroy(core->loop);
