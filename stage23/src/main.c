@@ -202,4 +202,5 @@ void threads_destroy() {
 void *thread_start(void *arg) {
   xps_core_t *core = arg;
   xps_core_start(core);
+  return NULL;
 }
