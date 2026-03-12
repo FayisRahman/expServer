@@ -64,7 +64,7 @@ void xps_core_start(xps_core_t *core) {
   /* create listeners from port 8001 to 8004 */
   for (int port = 8001; port <= 8004; port++) {
     /* create listener instance using xps_listener_create() */
-    xps_listener_create(core,"127.0.0.1",port);
+    xps_listener_create(core,LOCALHOST,port);
     logger(LOG_INFO, "xps_core_start()", "Server listening on port %u", port);
 	}
 

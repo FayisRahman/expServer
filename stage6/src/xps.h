@@ -13,12 +13,13 @@
 #include <unistd.h>
 
 // 3rd party libraries
-#include "lib/vec/src/vec.h" // https://github.com/rxi/vec
+#include "lib/vec/vec.h" // https://github.com/rxi/vec
 
 // Constants
 #define DEFAULT_BACKLOG 64
 #define MAX_EPOLL_EVENTS 32
 #define DEFAULT_BUFFER_SIZE 100000 // 100 KB
+#define LOCALHOST "0.0.0.0"
 
 // Data types
 typedef unsigned char u_char;
