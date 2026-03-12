@@ -23,7 +23,7 @@ int main() {
 
     // Setting up server addr
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_addr.sin_addr.s_addr = inet_addr("0.0.0.0");
     server_addr.sin_port = htons(SERVER_PORT);
 
     // Connect to tcp server
