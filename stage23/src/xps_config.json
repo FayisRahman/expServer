@@ -13,18 +13,15 @@
 				{
 					"req_path": "/",
 					"type": "file_serve",
-					"dir_path": "../../",
+					"dir_path": "../public",
 					"index": [
 						"index.html"
 					],
 					"gzip_enable": true,
-					"gzip_level": 8,
-					"gzip_mime_types": [
-						"text/x-c"
-					]
+					"gzip_level": 8
 				},
 				{
-					"req_path": "/hello",
+					"req_path": "/redirect",
 					"type": "redirect",
 					"http_status_code": 302,
 					"redirect_url": "http://localhost:8002/"
@@ -43,11 +40,7 @@
 					"req_path": "/",
 					"type": "reverse_proxy",
 					"upstreams": [
-						"localhost:3002"
-					],
-					"load_balancing": "round_robin",
-					"ip_whitelist": [
-						"127.0.0.1"
+						"localhost:3000"
 					]
 				}
 			]
@@ -65,6 +58,14 @@
 					"type": "redirect",
 					"http_status_code": 302,
 					"redirect_url": "https://expserver.github.io"
+				}
+			]
+		},
+		{
+			"listeners": [
+				{
+					"host": "0.0.0.0",
+					"port": 8004
 				}
 			]
 		}

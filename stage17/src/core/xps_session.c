@@ -96,8 +96,6 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
     logger(LOG_ERROR, "xps_session_create()", "failed to create client pipes");
 
     xps_session_destroy(session);
-
-    free(session);
     return NULL;
   }
 

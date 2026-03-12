@@ -20,6 +20,7 @@ xps_config_t *xps_config_create(const char *config_path) {
   JSON_Value *config_json = json_parse_file(config_path);
   if (config_json == NULL) {
     logger(LOG_ERROR, "xps_config_create()", "json_parse_file() failed");
+    free(config);
     return NULL;
   }
   /*initialize fields of config object*/
@@ -29,6 +30,8 @@ xps_config_t *xps_config_create(const char *config_path) {
   JSON_Object *root_object = json_value_get_object(config_json);
   if (root_object == NULL) {
     logger(LOG_ERROR, "xps_config_create()", "failed to parse root_object");
+    json_value_free(config_json);
+    free(config);
     return NULL;
   }
   /*initialize server_name,workers,servers fields - hint: use
@@ -41,17 +44,21 @@ xps_config_t *xps_config_create(const char *config_path) {
   vec_init(&(config->servers));
   if (servers == NULL) {
     logger(LOG_ERROR, "xps_config_create()", "failed to parse servers");
+    json_value_free(config_json);
+    free(config);
     return NULL;
   }
   for (size_t i = 0; i < json_array_get_count(servers); i++) {
     JSON_Object *server_object = json_array_get_object(servers, i);
     if (server_object == NULL) {
       logger(LOG_ERROR, "xps_config_create()", "failed to parse server_object");
+      xps_config_destroy(config);
       return NULL;
     }
     xps_config_server_t *server = malloc(sizeof(xps_config_server_t));
     if (server == NULL) {
       logger(LOG_ERROR, "xps_config_create()", "malloc() failed for server");
+      xps_config_destroy(config);
       return NULL;
     }
     vec_init(&(server->routes));

@@ -30,7 +30,7 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
 
   if (!(connect_error == 0 || errno == EINPROGRESS)) {
     logger(LOG_ERROR, "xps_upstream_create()", "connect() failed");
-    perror("Error message");
+    // perror("Error message");
     close(sock_fd);
     return NULL;
   }
@@ -40,7 +40,7 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
   if (connection == NULL) {
     logger(LOG_ERROR, "xps_upstream_create()",
            "xps_connection_create() failed");
-    perror("Error message");
+    // perror("Error message");
     close(sock_fd);
     return NULL;
   }

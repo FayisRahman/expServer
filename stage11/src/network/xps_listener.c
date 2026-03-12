@@ -152,6 +152,12 @@ void listener_connection_handler(void *ptr) {
       /* create upstream connection */
       xps_connection_t *upstream =
           xps_upstream_create(listener->core, listener->host, 3000);
+      if (upstream == NULL) {
+        logger(LOG_ERROR, "xps_listener_connection_handler()",
+               "xps_upstream_create() failed");
+        xps_connection_destroy(client);
+        return;
+      }
       upstream->listener = listener;
       /*create pipe connection to  client source and upstream sink for the
        * listener*/

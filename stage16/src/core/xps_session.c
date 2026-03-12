@@ -67,8 +67,6 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
            "failed to create some sources/sinks");
 
     session_destroy_pipes(session);
-
-    free(session);
     return NULL;
   }
 
@@ -99,7 +97,6 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
     logger(LOG_ERROR, "xps_session_create()", "failed to create client pipes");
 
     xps_session_destroy(session);
-
     free(session);
     return NULL;
   }
@@ -142,6 +139,13 @@ void client_source_handler(void *ptr) {
 
   xps_pipe_source_t *source = ptr;
   xps_session_t *session = source->ptr;
+
+  if (session->to_client_buff) {
+    printf("=== Response to client (%zu bytes) ===\n", session->to_client_buff->len);
+    printf("%.*s\n", (int)session->to_client_buff->len, session->to_client_buff->data);
+    printf("=====================================\n");
+  }
+
 
   // write to session->to_client_buff
   if (xps_pipe_source_write(source, session->to_client_buff) != OK) {

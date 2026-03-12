@@ -94,7 +94,6 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
     logger(LOG_ERROR, "xps_session_create()", "failed to create client pipes");
 
     xps_session_destroy(session);
-
     return NULL;
   }
 
@@ -105,7 +104,6 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
         xps_upstream_create(core, client->listener->host, 3000);
     if (upstream == NULL) {
       logger(LOG_ERROR, "xps_session_create()", "xps_upstream_create() failed");
-      perror("Error message");
       xps_session_destroy(session);
       return NULL;
     }

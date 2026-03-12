@@ -97,8 +97,6 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
     logger(LOG_ERROR, "xps_session_create()", "failed to create client pipes");
 
     xps_session_destroy(session);
-
-    free(session);
     return NULL;
   }
 
@@ -413,7 +411,7 @@ void session_process_request(xps_session_t *session) {
 
   // BAD REQUEST
   if (session->http_req == NULL) {
-    sprintf(reply, "HTTP/1.1 400 Bad Request\n");
+    sprintf(reply, "HTTP/1.1 400 Bad Request\r\nServer: eXpServer\r\n\r\n");
     xps_buffer_t *buff = xps_buffer_create(strlen(reply), strlen(reply), NULL);
     memcpy(buff->data, reply, strlen(reply));
     /*set buff to to_client_buff*/
@@ -435,16 +433,16 @@ void session_process_request(xps_session_t *session) {
       if (error == E_PERMISSION) {
         logger(LOG_WARNING, "session_process_request()",
                "xps_file_create() failed. Permission Denied");
-        sprintf(reply, "HTTP/1.1 403 Forbidden\n\n");
+        sprintf(reply, "HTTP/1.1 403 Forbidden\r\nServer: eXpServer\r\n\r\n");
       } else if (error == E_NOTFOUND) {
         logger(LOG_WARNING, "session_process_request()",
                "xps_file_create() failed. File Not found");
-        sprintf(reply, "HTTP/1.1 404 Not Found\n\n");
+        sprintf(reply, "HTTP/1.1 404 Not Found\r\nServer: eXpServer\r\n\r\n");
       } else {
         logger(LOG_ERROR, "session_process_request()",
                "xps_file_create() failed");
         perror("Error Message");
-        sprintf(reply, "HTTP/1.1 500 Internal Server Error\n\n");
+        sprintf(reply, "HTTP/1.1 500 Internal Server Error\r\nServer: eXpServer\r\n\r\n");
       }
       xps_buffer_t *buff =
           xps_buffer_create(strlen(reply), strlen(reply), NULL);
@@ -458,11 +456,11 @@ void session_process_request(xps_session_t *session) {
     if (session->file->mime_type) {
       sprintf(
           reply,
-          "HTTP/1.1 200 OK \nServer: eXpServer\nAccess-Control-Allow-Origin: "
-          "*\nContent-Length: %zu\nContent-Type: %s\n\n",
+          "HTTP/1.1 200 OK\r\nServer: eXpServer\r\nAccess-Control-Allow-Origin: "
+          "*\r\nContent-Length: %zu\r\nContent-Type: %s\r\n\r\n",
           session->file->size, session->file->mime_type);
     } else {
-      sprintf(reply, "HTTP/1.1 404 Not Found\n\n");
+      sprintf(reply, "HTTP/1.1 404 Not Found\r\nServer: eXpServer\r\n\r\n");
     }
     xps_buffer_t *buff = xps_buffer_create(strlen(reply), strlen(reply), NULL);
     memcpy(buff->data, reply, strlen(reply));

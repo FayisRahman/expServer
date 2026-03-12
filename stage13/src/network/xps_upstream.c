@@ -7,10 +7,12 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
   assert(host != NULL);
   assert(is_valid_port(port));
 
+  logger(LOG_DEBUG, "xps_upstream_create()", "connecting to %s:%u", host, port);
+
   int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (sock_fd < 0) {
-    logger(LOG_ERROR, "xps_upstream_create()", "socket() failed");
-    perror("Error message");
+    logger(LOG_ERROR, "xps_upstream_create()", "socket() failed for %s:%u", host, port);
+    perror("socket error");
     return NULL;
   }
 
@@ -19,8 +21,7 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
 
   struct addrinfo *upstream_addrinfo = xps_getaddrinfo(host, port);
   if (upstream_addrinfo == NULL) {
-    logger(LOG_ERROR, "xps_upstream_create()", "getaddrinfo() failed");
-    perror("Error message");
+    logger(LOG_ERROR, "xps_upstream_create()", "getaddrinfo() failed for %s:%u", host, port);
     close(sock_fd);
     return NULL;
   }
@@ -31,8 +32,10 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
   freeaddrinfo(upstream_addrinfo);
 
   if (!(connect_error == 0 || errno == EINPROGRESS)) {
-    logger(LOG_ERROR, "xps_upstream_create()", "connect() failed");
-    perror("Error message");
+    int saved_errno = errno;
+    logger(LOG_ERROR, "xps_upstream_create()", "connect() failed to %s:%u", host, port);
+    errno = saved_errno;
+    perror("connect error");
     close(sock_fd);
     return NULL;
   }
@@ -41,8 +44,8 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
   xps_connection_t *connection = xps_connection_create(core, sock_fd);
   if (connection == NULL) {
     logger(LOG_ERROR, "xps_upstream_create()",
-           "xps_connection_create() failed");
-    perror("Error message");
+           "xps_connection_create() failed for %s:%u", host, port);
+    perror("xps_connection_create error");
     close(sock_fd);
     return NULL;
   }

@@ -89,8 +89,6 @@ xps_http_res_t *xps_http_res_create(xps_core_t *core, u_int status_code) {
 
   http_res->body = NULL;
 
-  
-
   // set metrics
   int code_start = status_code / 100;
   if (code_start == 2)
@@ -135,7 +133,7 @@ xps_buffer_t *xps_http_res_serialize(xps_http_res_t *http_res) {
   }
 
   // Calculate length for final buffer
-  size_t final_len = strlen(http_res->response_line) + 1 + headers_str->len + 1 +
+  size_t final_len = strlen(http_res->response_line) + 2 + headers_str->len + 2 +
                      (http_res->body ? http_res->body->len : 0);
 
   // Create instance for final buffer
@@ -150,14 +148,14 @@ xps_buffer_t *xps_http_res_serialize(xps_http_res_t *http_res) {
   /* copy response line */
   memcpy(buff->pos, http_res->response_line, strlen(http_res->response_line));
   buff->pos += strlen(http_res->response_line);
-  memcpy(buff->pos, "\n", 1);
-  buff->pos += 1;
+  memcpy(buff->pos, "\r\n", 2);
+  buff->pos += 2;
 
   /* copy headers */
   memcpy(buff->pos, headers_str->data, headers_str->len);
   buff->pos += headers_str->len;
-  memcpy(buff->pos, "\n", 1);
-  buff->pos += 1;
+  memcpy(buff->pos, "\r\n", 2);
+  buff->pos += 2;
 
   if (http_res->body != NULL) {
     /* copy response body*/

@@ -30,8 +30,8 @@
 #include "lib/vec/vec.h"
 
 // Constants
-#define SERVER_NAME "expServer"
-#define LOCALHOST "127.0.0.1"
+#define SERVER_NAME "eXpServer"
+#define LOCALHOST "0.0.0.0"
 #define DEFAULT_BACKLOG 64
 #define MAX_EPOLL_EVENTS 32
 #define DEFAULT_NULLS_THRESH 32

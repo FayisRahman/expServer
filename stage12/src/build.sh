@@ -1,4 +1,4 @@
-gcc -g -fsanitize=address \
+gcc -O0 -g -fsanitize=address \
     main.c \
     lib/vec/vec.c \
     core/xps_core.c core/xps_loop.c core/xps_pipe.c \

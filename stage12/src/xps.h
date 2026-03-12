@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 // 3rd party libraries
@@ -24,7 +25,7 @@
 #define DEFAULT_BUFFER_SIZE 100000       // 100 KB
 #define DEFAULT_PIPE_BUFF_THRESH 1000000 // 1 MB
 #define DEFAULT_NULLS_THRESH 32
-#define LOCALHOST "127.0.0.1"
+#define LOCALHOST "0.0.0.0"
 
 // Error constants
 #define OK 0            // Success

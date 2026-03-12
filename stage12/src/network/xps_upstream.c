@@ -20,7 +20,6 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
   struct addrinfo *upstream_addrinfo = xps_getaddrinfo(host, port);
   if (upstream_addrinfo == NULL) {
     logger(LOG_ERROR, "xps_upstream_create()", "getaddrinfo() failed");
-    perror("Error message");
     close(sock_fd);
     return NULL;
   }
@@ -30,10 +29,12 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host,
 
   if (!(connect_error == 0 || errno == EINPROGRESS)) {
     logger(LOG_ERROR, "xps_upstream_create()", "connect() failed");
-    perror("Error message");
+    freeaddrinfo(upstream_addrinfo);
     close(sock_fd);
     return NULL;
   }
+
+  freeaddrinfo(upstream_addrinfo);
 
   /* create a connection to upstream with core and sock_fd*/
   xps_connection_t *connection = xps_connection_create(core, sock_fd);
